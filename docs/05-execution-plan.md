@@ -1,6 +1,6 @@
 # Controlled implementation pipeline
 
-**Current direction:** the user paused implementation for the [whole-platform audit and unified release plan](16-final-platform-plan.md). That plan now owns the programmable release order. The gates below remain the original AppSpec pipeline and its historical evidence criteria; they do not override the new scope or authorize a probe during the pause.
+**Current direction:** the user requests a full input-to-agent-to-device redesign plan, with Gemini authoring application-specific source from the user's prompt/image. [The revised release plan](16-final-platform-plan.md) owns that work and the future programmable gates. Implementation/live probes are held during this planning deliverable. The gates below remain legacy AppSpec criteria, not a definition of the new platform.
 
 This is the implementation runbook for the one-shot creation demo. It does not record completed implementation. Implementation is now authorized; read current gate evidence and user steering before selecting the next task. All project artifacts, interfaces, prompts, identifiers, comments and demo material are in English.
 

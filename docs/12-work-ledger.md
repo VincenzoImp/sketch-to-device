@@ -2,7 +2,7 @@
 
 This is the authoritative task-state and ownership record. Gate definitions remain in [the execution plan](05-execution-plan.md); access conditions remain in [readiness](11-readiness.md). Update this file at each handoff. A future session must not infer active workers from completed research reports.
 
-Latest integrated evidence checkpoint: **16:53 Europe/Zurich, 10 October 2026**, below. The latest user instruction pauses implementation and physical probes for a serious whole-project audit and one coherent programmable release plan. Periodic public commits remain authorized. Earlier timestamped checkpoints are historical; use the newest evidence and ownership rather than their pending items.
+Latest planning checkpoint: **17:26 Europe/Zurich, 10 October 2026**, below. The user clarified that Gemini must author the app from their prompt/image, then requested a serious full input-to-device redesign and primary-source AI Studio/Pi research. Feature implementation and live probes are held during this planning deliverable. Periodic reviewed public commits remain authorized; full access and direct publication are now observed. Historical checkpoints do not override this scope.
 
 States: `not_started`, `in_progress`, `blocked`, `passed`. A passed implementation gate needs observed evidence. Ownership is a logical lane, not a promise that a particular prior agent session still exists.
 
@@ -14,7 +14,7 @@ States: `not_started`, `in_progress`, `blocked`, `passed`. A passed implementati
 | C02 scope and design | passed for planning | Coordinator; [product](02-product.md), [architecture](03-architecture.md), [contracts](04-contracts.md) | One-shot flow, canonical limits, timer semantics and deployment identity reconciled. Components are implemented and tested separately; complete physical integration remains pending |
 | C03 session and worker continuity | passed for planning | Coordinator; [handoff](09-session-handoff.md), [decisions](10-decisions.md), [readiness](11-readiness.md), this file | A fresh agent without chat history reconstructed product and next actions. Its findings are recorded below and reconciled |
 | C04 context audit and export | passed for initial snapshot | Coordinator; hardware independent archive review | 100-file initial export accepted, SHA-256 `01f3b33eaa2968d2b3ebe02e1df55934da414a82ad4de69df4484b0a7391b08b`. Current local doc edits need their own audit/review and later export if required |
-| C05 public GitHub publication | passed for latest checkpoint | Coordinator; [public repository](https://github.com/VincenzoImp/sketch-to-device) | User-terminal checkpoint publisher and coordinator verified the public repository, 144 audited files, local HEAD and remote main at `35e8d69267ff5fea5b7c85cfbf0ced2813c72fb9`. Initial history is preserved. Later updates require separately reviewed commit/push |
+| C05 public GitHub publication | passed for latest checkpoint | Coordinator; [public repository](https://github.com/VincenzoImp/sketch-to-device) | Coordinator directly published `d223469e89f2fca6057ff97c01598fa02ede3c53`, then matched all158 reviewed file blobs and remote main. Initial history is preserved. The current redesign revision requires its own reviewed commit/push |
 | C06 autonomy and active research | passed for planning | Research author, independent cold-start reviewer; files released | [Working method](14-autonomy-and-research.md) verified against official sources; reviewer found no material defect. Implementation authorization now recorded |
 
 ## Product implementation gates
@@ -25,7 +25,7 @@ Implementation was authorized on 10 October and initial work started around 12:1
 
 | Gate | State | Planned lane | Dependency and minimum evidence |
 | --- | --- | --- | --- |
-| G0 prerequisites | in_progress | Coordinator + hardware/provider workers | Provider access, backup/build/flash, Android audio input and hotspot device HTTPS passed. Managed restrictions persist; photo-only visual input passed; combined photo+voice remains open. [Readiness](11-readiness.md) |
+| G0 prerequisites | in_progress | Coordinator + hardware/provider workers | Provider access, backup/build/flash, Android audio input and hotspot device HTTPS passed. Earlier managed restrictions are superseded by full access; photo-only visual input passed; combined photo+voice remains open. [Readiness](11-readiness.md) |
 | G1 contracts and probes | in_progress | Contract worker + coordinator | Contract/runtime/provider checks and actual voice generation-to-device passed to stated scope. Narrow extraction missed tap/duration, so strict intended behavior was verified independently afterward. Photo-only visual evidence passed; combined media/fidelity remain open |
 | G2 physical runtime | in_progress | Hardware | Fixture and generated 15-second game controls passed. Generated app restored and started a new game after ordinary reboot without flash. Interrupted-install/power-loss and malformed-package preservation still need physical proof |
 | G3 delivery slice | in_progress | Hardware + backend + companion | Complete first voice-generated delivery passed all four ACK stages for sequence 6 with exact identity/hash and physical controls. Photo-only sequence7 also passed; combined photo/voice and remaining negative/repeatability cases stay open |
@@ -40,18 +40,16 @@ The deployed baseline is preserved while reviewed source evolves. Voice generati
 
 | Task | Owner / state | Exclusive files and next action |
 | --- | --- | --- |
-| Unified audit and release plan | Coordinator; audit complete, publication pending | `docs/16-final-platform-plan.md`, current registers and README. No feature implementation, flash, service restart or provider job |
-| Hardware audit and plan review | hardware_research; report released, plan hardware scope accepted | Ignored `artifacts/verification/final-platform-hardware-audit-20261010.md`; graphics/timing/storage/lifecycle findings integrated |
-| Agent/media audit and plan review | partners_research; report released, revised plan scope accepted | Ignored `artifacts/verification/final-platform-agent-audit-20261010.md`; checker-route prerequisite, SDK, image reuse and tools integrated |
-| System audit and final cold-start review | cold_start_audit; report released, final canonical review accepted | Ignored `artifacts/verification/final-platform-system-audit-20261010.md`; exact late-failure and printed-marker counterexamples, recovery/setup and handoff review |
-| QuickJS engine and UI probes | Released and accepted at stated host/build scope | Public probe sources; no generated-JS physical execution or production integration |
-| Public target UI reproduction | Source/build independently accepted and released | `firmware/probes/programmable-target-ui/` and `scripts/probe_programmable_target.py`; four wrapper tests and actual P4 cross-build passed, no serial/flash operation |
-| Reversible target UI helper | Parked; incomplete independent review | Only ignored `.tools/programmable-target-ui/physical_probe.py` and test file. No restore plan prepared, no serial execution. Do not run |
-| Native allocation audit | Released and coordinator accepted | Ignored allocation-boundary report: bounded retained objects, actual three-runtime staging peak, no global OOM guarantee or established need for full preallocation |
-| Companion unsupported copy | Source change independently accepted; no implementation resumed | Actual controller NodeVM checks and syntax check passed. Removes unchanged-retry advice and stops failed-step animation; does not add capability or imply Android reload |
-| Public checkpoint | Coordinator prepares; publication pending | Current158-file checkpoint passed final review/context audit; normal-Terminal commit/push remains pending. Last verified remote remains35e8d69 |
+| Full-chain redesign and reconciliation | Coordinator; plan and reconciliation accepted, checkpoint preparation | `docs/16-final-platform-plan.md`, README, AGENTS and current registers. No product implementation, live call, service restart or flash |
+| Agent and AI Studio research/review | partners_research; plan scope accepted | Read-only primary-source research and actual plan review; no source ownership remains |
+| Runtime alternatives and Pi research | hardware_research; report released | Read-only architecture/runtime/harness comparison; proposed tiny canvas API remains unfrozen |
+| Independent system/continuity review | cold_start_audit; plan and reconciliation accepted, files released | Inspect actual plan/diffs and current registers; no edits |
+| Tool-continuation draft | Parked; unaccepted | Ignored `artifacts/verification/drafts/probe_programmable_agent.py`; three cancellation defects remain, no live request made |
+| QuickJS/LVGL engine/UI/target probes | Released; accepted only at host/build scope | Public sources and isolated P4 build; no production or physical generated JS proof |
+| Physical helper | Parked; unreviewed | Ignored `.tools/programmable-target-ui/physical_probe.py`; do not execute |
+| Public checkpoint | Coordinator; next reviewed revision pending | Previous d223469 verified directly. Run context/diff checks and reviewed publisher after reconciliation acceptance |
 
-No observer or physical probe is active. Preserve the running endpoint, hotspot, Hello Colors app and exact privately frozen runtime0.2 image. Historical assignments below do not authorize continuing stopped work.
+No physical probe or observer is active. Preserve the running service/endpoint, hotspot, Hello Colors and frozen runtime0.2 image. The user is not being asked to submit the later prompt/image before the new platform exists.
 
 ## Review evidence
 
@@ -311,3 +309,27 @@ Incremental public publishing is implemented and independently accepted, includi
 Hardware, agent/media and cold-start reviewers accepted the final canonical plan and reconciled current documents without a remaining material finding. Root addressed pause authority, legacy acceptance scope, new-schema gate clarity and stale source/deployment/publication summaries. Root and independent reviewer both ran the public context auditor:158files passed; `git diff --check` passed. The default checkpoint helper also returned audit_passed/published=false. No additional product tests were necessary for documentation-only reconciliation; the companion copy and target reproduction retain their earlier independent practical checks.
 
 The exact final public file hashes are frozen in ignored `artifacts/verification/checkpoint-platform-audit.json` after this record. The reviewed publication command is `python3 -B scripts/checkpoint_github.py --publish --message "Audit programmable platform release"`. It requires the user's normal Terminal because managed Git metadata is read-only and GitHub access is restricted. This is execution of already-authorized publication, not a new approval requirement. Remote publication remains unverified until an actual successful result and snapshot/remote comparison. Feature implementation and physical probes remain paused.
+
+## Resumed implementation at 17:09 Europe/Zurich
+
+The user explicitly requests a concrete final version to test whack-a-mole, asks whether all work is committed, and questions the broad integration estimate. This lifts the audit pause. The11–22-hour figure was a source-based hardware-integration estimate, not per-app generation time or a fixed elapsed-time requirement. Prioritize a working programmable vertical slice through the common SDK, preserving the broader architecture and truthful completion scope.
+
+The session permission profile now explicitly enables full filesystem and network access. The coordinator is publishing the already reviewed158-file audit checkpoint directly, then will verify it. Do not retain the earlier managed restriction as a current fact after direct checks pass. Physical actions still require reviewed correct-target/backup procedures, not renewed generic user approval.
+
+New lane assignments: coordinator owns shared contracts, backend/device integration and current status; hardware_research owns reusable programmable renderer/engine/timers/input/assets and native tests; partners_research owns the minimal live custom-checker route and subsequent managed programmable generation/SDK; cold_start_audit owns independent contract/runtime/integration review and the late-failure/capability backend seam when delegated. Detailed file ownership follows in task messages; no overlapping edits.
+
+## Full-chain redesign clarification at 17:26 Europe/Zurich
+
+The user corrected the earlier playable-app phrasing: the coordinator must prepare the platform; Gemini inside the product must author the app after the user supplies their prompt and image. The user then requested a serious whole-pipeline plan, online research into Google AI Studio and possibly Pi, and broad tool/context freedom rather than prepared application code. This is D29 and supersedes the narrow interpretation of D28. No game source was written and no production/runtime code changed.
+
+Root inspected actual generator/schema/renderer/store seams and current official sources. Three independent lanes examined runtime alternatives, agent/media/AI Studio and system/recovery; Pi was researched separately. The revised canonical plan includes a full pipeline diagram, file-level rewrite map, ordinary source authorship, extensible SDK modules, real asset reuse, immutable tested candidates and server-owned execution receipts. It retains the managed Google authoring harness, with AI Studio as an optional development/hosting route and Pi as a measured fallback. None is a substitute for the device runtime/API implementation.
+
+Hardware warned that the proposed tiny canvas API would be another artificial ceiling if declared final; the plan now requires SDK growth beyond the first proof. Provisional24KiB/four-asset limits are not claimed to be hardware limits. Broad device services remain explicit separately tested milestones. The user-facing readiness gate is a fresh generated source/image app through the full pipeline and physical recovery, followed by unseen behavior changes without native/template edits.
+
+The previous reviewed audit was directly published atd223469e89f2fca6057ff97c01598fa02ede3c53. Root verified all158 committed blobs against the frozen public snapshot and `git ls-remote origin refs/heads/main` returned the same SHA. This establishes that the previous read-only Git/network condition is no longer current. New serial/provider access has not been inferred from that result.
+
+The provider worker's unaccepted G0 script was moved unchanged out of public source into ignored `artifacts/verification/drafts/probe_programmable_agent.py` (17,600bytes, mode0600, SHA256ddcef4bff443347acf2f19217d97a1e0cea52cdf429677f7b83053b449796227). Seven mocked protocol checks and one fixed local engine proof passed; independent review reproduced lost cancellation ID at deadline, wrong ID after mismatched polling and insufficiently bounded cleanup. No live provider request occurred. Fix/review before resuming that probe; it can prove transport, not fresh generated-app correctness.
+
+The agent/pipeline and system reviewers accepted the actual revised canonical plan against current primary sources with no material findings. The independent cold-start reviewer then accepted all13 changed documents, checked the parked draft and reran the public context audit (158files PASS) and diff check (PASS). Root ran the same checks. Only documentation changed; no firmware build/flash, service restart or generated-app installation took place during it.
+
+Checkpoint preparation: freeze the exact158-file snapshot in ignored `artifacts/verification/checkpoint-agent-redesign.json`, then run the authorized publisher with message `Plan full agent and runtime redesign`. After success, verify every committed blob and remote main; write the sanitized result to ignored `artifacts/verification/checkpoint-agent-redesign-publication.json`. The commit containing this record cannot embed its own hash; use that observed receipt and Git history for this revision, rather than interpreting the preceding d223469 checkpoint as the new one. Public source remains subject to the same private-material exclusion rules.

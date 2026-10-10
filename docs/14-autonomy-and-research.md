@@ -16,7 +16,7 @@ The procedures below are project choices applying those practices to our user re
 
 Read the [handoff](09-session-handoff.md), latest request and [work ledger](12-work-ledger.md). Inspect current time, available tools and relevant local state once per session; recheck a failed capability after a material environment change. Do not assume yesterday's tool availability or remaining hackathon time.
 
-Choose the next incomplete task within the authorized phase. Implementation and real probes are now explicitly requested: proceed through the existing gates without requesting routine setup or milestone permission again. Keep the plan aligned with actual code and practical evidence; written claims cannot pass a gate.
+Choose the next incomplete task within the latest authorized phase. Implementation and real probes have durable authorization, but a later planning/review request governs the current deliverable. Proceed within that scope without requesting routine setup or milestone permission again. Keep the plan aligned with actual code and practical evidence; written claims cannot pass a gate.
 
 For each coherent milestone:
 

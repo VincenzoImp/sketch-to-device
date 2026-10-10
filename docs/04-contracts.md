@@ -1,6 +1,6 @@
 # Runtime and API contracts
 
-AppSpec schema 1; runtime capability version 0.2.0 in current source. Loading this update on the physical device remains a separate build/flash gate. [Executable host contracts and fixtures](../contracts/README.md) now implement the initial schema, validation and reference behavior; review/test status belongs in [the work ledger](12-work-ledger.md). Embedded validation, backend integration and the LVGL renderer are implemented and independently reviewed; physical integration remains a separate gate. These are product contracts, not provider endpoints or formats. This file owns runtime semantics and product limits; the linked versioned capability file owns concrete presets.
+AppSpec schema 1; runtime capability version 0.2.0 in current source. Runtime0.2 has been flashed and Hello Colors passed physical checks. These remain legacy contracts; [the redesign plan](16-final-platform-plan.md) defines the future separately versioned programmable path. [Executable host contracts and fixtures](../contracts/README.md) now implement the initial schema, validation and reference behavior; review/test status belongs in [the work ledger](12-work-ledger.md). Embedded validation, backend integration and the LVGL renderer are implemented and independently reviewed; physical integration remains a separate gate. These are product contracts, not provider endpoints or formats. This file owns runtime semantics and product limits; the linked versioned capability file owns concrete presets.
 
 ## One-shot generation and install intent
 

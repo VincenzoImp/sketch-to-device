@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 10 October 2026, 16:52 Europe/Zurich. **Implementation and physical probes are paused for the user-requested whole-project audit and coherent release plan.** The working demo remains intact. Read [the new plan](16-final-platform-plan.md), [handoff](09-session-handoff.md), [readiness](11-readiness.md) and [work ledger](12-work-ledger.md) before resuming.
+Updated: 10 October 2026. **Current task: plan the complete generation-pipeline redesign; Gemini must author apps from the user's prompt/image. No hand-built game substitutes.** The working demo remains intact. Read [the new plan](16-final-platform-plan.md), [handoff](09-session-handoff.md), [readiness](11-readiness.md) and [work ledger](12-work-ledger.md) before resuming.
 
 ## What works
 
@@ -8,7 +8,7 @@ Updated: 10 October 2026, 16:52 Europe/Zurich. **Implementation and physical pro
 - A separate photo-only request generated sequence7 Star Tap and worked physically. Its 10-second duration was a default; there was no accompanying audio. This is not combined photo/voice evidence.
 - After the service restart and runtime0.2 flash, fresh Hello Colors sequence12 passed exact activation, independent initial-state/six-press checks and user-confirmed physical color cycling. The next Flappy Bird request returned `unsupported_request` and preserved Hello Colors.
 - Display/touch, downloaded apps and authenticated HTTPS through the Android cellular hotspot work. Certificate verification stays enabled. The event Wi-Fi had a captive portal.
-- Latest verified public checkpoint: [35e8d69](https://github.com/VincenzoImp/sketch-to-device/commit/35e8d69267ff5fea5b7c85cfbf0ced2813c72fb9), 144 audited files with earlier history preserved. Later local work needs a new publication checkpoint.
+- Verified public checkpoint before this redesign revision: [d223469](https://github.com/VincenzoImp/sketch-to-device/commit/d223469e89f2fca6057ff97c01598fa02ede3c53),158 reviewed files, directly published and matched to snapshot/remote main. Current planning changes need their own reviewed checkpoint.
 
 ## Audit conclusion
 
@@ -25,8 +25,8 @@ The [release plan](16-final-platform-plan.md) selects one JavaScript SDK with ex
 
 ## Next action
 
-The hardware, agent and final cold-start reviews accepted the reconciled plan. The public context check passed 158 files and the diff whitespace check passed. The reviewed checkpoint is ready; publication through the restricted Git/network boundary remains pending. Subsequent implementation begins with milestone0: freeze shared contracts and prove an actual same-engine testing tool route, before building the production script path. The partial ignored physical-flash helper is parked and unreviewed; do not run it. No fresh user generation, service restart or flash is needed for this audit.
+Complete independent review and public checkpoint of the revised full-chain plan. It specifies source authoring, SDK/tool freedom, actual image assets and trusted execution/repair, immutable candidate submission and durable device recovery. Official-source comparison retains managed Antigravity/Interactions as the next harness; AI Studio may help development/hosting and Pi remains a fallback. No new runtime or app capability has been deployed by this planning work.
 
-Combined photo+voice, wider request/reference fidelity, interrupted installation, repeated runs, rehearsal and onsite submission are still open. The hardware integration estimate alone is 11–22 focused engineer-hours, with backend broker/hosting work not yet sized. The old17:00 target is not evidence that this can be completed by then. Preserve the demonstrated flow while planning honestly.
+After the planning deliverable, the next implementation milestone is the real tool bridge plus shared host/device programmable path. Its first proof uses a newly generated app from prompt/image, not a coordinator-written game. Wider requests and peripheral services have separate acceptance gates. Camera, microphone and speaker remain unavailable to generated apps until implemented/tested.
 
-The user authorizes autonomous work and periodic public commits. This managed session still has read-only Git metadata and restricted network/serial access; only concretely unavailable operations require the normal Terminal. No new key, hotspot credential or product-scope question is needed.
+The user authorizes autonomous work and periodic public commits. Full filesystem/network permission is now enabled; direct Git/GitHub operations passed. Verify serial/provider operations when needed instead of repeating old restriction claims. Preserve the live demo during planning; no new key, hotspot credential, prompt, image or flash is needed now.

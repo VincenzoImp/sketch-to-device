@@ -1,6 +1,6 @@
 # Acceptance checks and live demo
 
-These checks define the original AppSpec demonstration acceptance. **The user has paused implementation for the [whole-platform audit and programmable release plan](16-final-platform-plan.md); its six-app matrix and common recovery/operations gates now define the expanded release.** Retain the checks below as compatibility and original-demo criteria, not a tap-game-only definition of the finished platform. The [work ledger](12-work-ledger.md) records actual voice, photo-only and Hello Colors physical evidence and their remaining limitations.
+These checks define the original AppSpec demonstration acceptance. **The [full-chain redesign plan](16-final-platform-plan.md) owns the current planning deliverable and future programmable acceptance. Its example apps test generality; they are not templates or a whitelist. Gemini must author the app from the user's input.** Retain the checks below as compatibility and original-demo criteria, not a tap-game-only definition of the finished platform. The [work ledger](12-work-ledger.md) records actual voice, photo-only and Hello Colors physical evidence and their remaining limitations.
 
 ## Required product evidence
 
