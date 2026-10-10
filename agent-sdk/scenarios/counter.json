@@ -1,0 +1,35 @@
+{
+  "scenario_version": 1,
+  "steps": [
+    {
+      "op": "press",
+      "widget_id": "add",
+      "at_ms": 0,
+      "expect": {
+        "state": {
+          "count": 1
+        }
+      }
+    },
+    {
+      "op": "press",
+      "widget_id": "add",
+      "at_ms": 1,
+      "expect": {
+        "state": {
+          "count": 2
+        }
+      }
+    },
+    {
+      "op": "press",
+      "widget_id": "reset",
+      "at_ms": 2,
+      "expect": {
+        "state": {
+          "count": 0
+        }
+      }
+    }
+  ]
+}

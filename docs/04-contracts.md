@@ -1,6 +1,6 @@
 # Runtime and API contracts
 
-Working version 0.1. [Executable host contracts and fixtures](../contracts/README.md) now implement the initial schema, validation and reference behavior; review/test status belongs in [the work ledger](12-work-ledger.md). Embedded validation, backend integration and the LVGL renderer are implemented and independently reviewed; physical integration remains a separate gate. These are product contracts, not provider endpoints or formats. This file owns runtime semantics and product limits; the linked versioned capability file owns concrete presets.
+AppSpec schema 1; runtime capability version 0.2.0 in current source. Loading this update on the physical device remains a separate build/flash gate. [Executable host contracts and fixtures](../contracts/README.md) now implement the initial schema, validation and reference behavior; review/test status belongs in [the work ledger](12-work-ledger.md). Embedded validation, backend integration and the LVGL renderer are implemented and independently reviewed; physical integration remains a separate gate. These are product contracts, not provider endpoints or formats. This file owns runtime semantics and product limits; the linked versioned capability file owns concrete presets.
 
 ## One-shot generation and install intent
 
@@ -18,8 +18,8 @@ These are prototype budgets, not hardware or provider maxima. Changing them requ
 | --- | --- |
 | Demo devices | One paired board |
 | Generation concurrency | One executing worker. Another request receives `409 generation_busy`; no queue or cancellation API. Reusing an accepted request ID with the same input returns its original job |
-| Clip duration | At most 30 seconds, enforced after media probing; 15–30 seconds is recording guidance and shorter clips are accepted. Reject overlong media without silent truncation |
-| Backend upload | At most three attachments, 12 MiB each and 20 MiB combined; reject requests above any limit |
+| Clip duration | Audio at most 60 seconds; video at most 30 seconds. Enforce the decoded timeline, including durationless browser containers; reject overlong media without silent truncation |
+| Backend upload | At most three attachments, 20 MiB each and 32 MiB combined; reject requests above any limit. Photos are decoded and normalized before provider submission; see the media module for pixel/output budgets |
 | Prompt | At most 6,000 characters at the companion service boundary |
 | Generation job | At most 180 seconds locally, including a ten-second cancellation reserve; at most two repair turns after the initial attempt |
 | AppSpec bytes | At most 64 KiB, measured as the actual UTF-8 response body |
@@ -62,12 +62,18 @@ A screen has `id`, `title`, and `widgets`. It uses the fixed vertical layout rul
 | Widget | Fields and behavior |
 | --- | --- |
 | `label` | Static `text` |
-| `button` | `text`, `on_press` action list; one event per completed tap, no hold-to-repeat |
+| `button` | `text`, `on_press` action list, optional `background_color` in exact `#RRGGBB` form; one event per completed tap, no hold-to-repeat |
 | `counter` | `state_key` referencing an integer, optional static `text` label |
 | `toggle` | `state_key` referencing a boolean, static `text`; one tap toggles that value once |
 | `timer` | `duration_seconds`, `on_complete` action list, optional static `text`; displays remaining time when visible |
 
 No arbitrary templates or expressions. The initial capability fixture selects two palettes, one font preset, a 48-pixel shell reservation and 320 × 432 app viewport. Host layout validation accounts for padding, text and usable touch targets; structural widget limits alone do not establish fit. These are implemented budget checks awaiting actual LVGL measurement, not proof of physical rendering.
+
+### Button color and runtime compatibility
+
+Runtime 0.2.0 adds optional button-only `background_color`: six case-insensitive ASCII hex digits after `#`. Nulls, short hex, alpha channels, color names and trailing whitespace are rejected. Omission preserves the selected theme. The renderer chooses black or white text using maximum sRGB relative-luminance contrast. A finite cycle can use existing screen navigation with identical layouts and different button colors; [Hello Colors](../contracts/fixtures/hello-colors.json) exercises pink → blue → green → pink. This adds no scripting or new event action.
+
+New firmware accepts manifests requiring runtime 0.1.0 or 0.2.0 explicitly. The backend labels new packages with its capability version; the old firmware rejects 0.2.0 until upgraded. Saved packages and NVS metadata formats are unchanged; old packages remain valid. Downgrading firmware is not a guarantee that newer colored packages can execute.
 
 ### Actions and event ordering
 

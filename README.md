@@ -2,7 +2,7 @@
 
 Operating context for the Agentic AI Hack Zürich on October 10, 2026. Turn a short description or a narrated sketch into an interactive app on a Waveshare ESP32-P4 device. Working project name.
 
-**Current phase at 14:54 Europe/Zurich: first voice-generated physical run passed; visual repeat and remaining acceptance checks are next.** A fresh Android recording went through Gradium and a real Gemini tool run to a downloaded app, exact device ACK, working 15-second tap game and ordinary reboot restoration. Activation took 90.598 seconds from the observer first seeing the job, not from the phone tap. The requested title Rocket Tap became Rocket Tata. Production used generic behavior checks because speech extraction missed tap/duration; independent strict 15-second tests passed afterward. The user is preparing a second sketch-plus-voice STAR TAP request; no second generated result exists yet. [The work ledger](docs/12-work-ledger.md) records evidence and limits.
+**Current phase: broaden app programming while preserving the working demo.** A voice-generated app and a separate photo-only app have been installed and used on the physical device. The voice app also survived an ordinary reboot; its requested title was misrecognized. The user has now prioritized a programmable runtime, consultable agent SDK and broader device APIs. See [the platform decision and feasibility gates](docs/15-programmable-apps.md) and [current evidence](docs/12-work-ledger.md). Local source improvements and a compiled binary are not automatically deployed or published.
 
 ## Primary experience
 
@@ -10,7 +10,7 @@ On an Android phone, the user supplies one prompt, optionally with a sketch, voi
 
 This action authorizes the reversible installation of the validated package. Transcript confirmation, preview approval, and another chat turn are not required. An optional preview can show progress; conversational revisions are a later enhancement. A candidate live demonstration is a simple 10-second tap game generated from one English prompt.
 
-The implemented firmware is a reusable ESP-IDF/LVGL runtime. Each generated app describes screens, state, and supported actions in a bounded JSON AppSpec, so app installation does not require recompiling the firmware. The confirmed board is **Waveshare ESP32-P4-WIFI6-Touch-LCD-3.5**. Built-in tap behavior and a downloaded Focus Timer fixture have physical evidence. One generated app has now replaced the fixture, works on the touchscreen and survives an ordinary reboot. A second generated app with visual input, interrupted-install recovery and broader repeatability remain unproved; camera and battery operation are also unverified.
+The implemented firmware is a reusable ESP-IDF/LVGL runtime for the **Waveshare ESP32-P4-WIFI6-Touch-LCD-3.5**. It currently executes a bounded JSON AppSpec, without compiling firmware for each app. This format has real expressive limits: it is not arbitrary application programming. The selected next experiment is an isolated QuickJS-NG JavaScript engine probe, followed by a versioned UI/device SDK if the engine passes. Existing apps remain supported during that work. Camera, microphone and speaker APIs for generated apps are not implemented yet.
 
 ## Read in this order
 
@@ -31,6 +31,8 @@ Operational references: [decision origins and history](docs/10-decisions.md), [a
 Every deliverable follows [independent review and practical verification](docs/13-quality-gates.md) and the [active research workflow](docs/14-autonomy-and-research.md). The implementation is not complete until the real Android → providers → physical device path passes acceptance.
 
 Research: [hardware](docs/research/hardware.md), [Gemini](docs/research/gemini.md), and [partners](docs/research/partners.md). [AGENTS.md](AGENTS.md) governs subsequent work.
+
+The [versioned agent SDK](agent-sdk/README.md) packages consultable API references, managed-agent instructions/skills and runnable examples for the currently implemented runtime. The [programmable platform plan](docs/15-programmable-apps.md) describes the separate engine and device-framework extension.
 
 ## Setup on the tested Mac and board
 
@@ -72,7 +74,7 @@ For later firmware/configuration updates, use `--flash-runtime` without the init
 
 ## Current executable foundation
 
-[Contract tooling](contracts/README.md) contains the schema, bounded parser/validator, deterministic reference runtime and two behavioral fixtures. It runs on Python 3.9+ without third-party dependencies. Its host tests do not establish physical rendering, firmware behavior or provider integration.
+[Contract tooling](contracts/README.md) contains the schema, bounded parser/validator, deterministic reference runtime and behavioral fixtures. It runs on Python 3.9+ without third-party dependencies. Its host tests do not establish physical rendering, firmware behavior or provider integration.
 
 ```sh
 python3 -B -m unittest discover -s tests -v
@@ -81,12 +83,14 @@ python3 -B -m runtime.check contracts/fixtures/tap-sprint.json --scenario contra
 
 [Hardware probe evidence](docs/research/hardware-probe.md) records the access and chip checks. [Provider probe evidence](docs/research/provider-probe.md) distinguishes managed-session network restrictions from successful user-terminal authentication. [Managed generation evidence](docs/research/managed-probe.md) records actual downloaded apps and the limits of their verification. Use the ledger for independent review status and remaining integration gates.
 
-The [backend](backend/README.md) contains the HTTP service, deployment store and managed generation worker; the [companion](companion/README.md) supplies the mobile flow. The [firmware](firmware/README.md) contains the C runtime and LVGL renderer. The first complete voice run substantively used Gradium and managed Gemini, then installed sequence 6, rocket_tata, with matching app/version/hash ACK. The user confirmed Start, 15-second scoring/final score, Play again resetting score/countdown, phone confirmation and the same playable app after reboot without flashing. Source remains frozen while a new observer watches for the requested 20-second STAR TAP sketch/voice run. The last full host suite passed 131 tests at 14:37:53; later exact-artifact host and native C checks supplement the physical evidence.
+The [backend](backend/README.md) contains the HTTP service, deployment store and managed generation worker; the [companion](companion/README.md) supplies the mobile flow. The [firmware](firmware/README.md) contains the C runtime and LVGL renderer. Voice sequence6 (Rocket Tata) and photo-only sequence7 (Star Tap) received exact active acknowledgments and user-confirmed physical behavior. A later Hello World color request failed at the provider without replacing Star Tap; its precise cause is not established. Fresh combined photo+voice, interrupted-install recovery and broader fidelity remain separate acceptance work.
+
+Local changes add button colors, input normalization, larger media bounds and phase timing. The source runtime is0.2; the last confirmed flashed runtime is0.1. Upgrade firmware and restart the service coherently before treating those changes as a live result. The new programmable engine is a separate feasibility probe, not part of the current firmware.
 
 The selected partners are **Google DeepMind and Gradium**. Entire is optional and parked. All project artifacts, UI, code comments, agent prompts, and demo material must be in **English**; the conversation with the user remains in Italian.
 
 **Deadlines:** public competition opt-in at 19:00; the user's ready-by target at 17:00; live demos at 20:00, all Europe/Zurich. See [event details](docs/01-event.md).
 
-The user has requested a public GitHub repository and authorized necessary tool setup. GitHub CLI authentication succeeded; source publication is still pending; see [current environment status](docs/00-status.md). Original PDFs stay unchanged and private. Their initial paths and `.env` are excluded by `.gitignore`; credentials must never enter public artifacts.
+The first public snapshot is verified at [VincenzoImp/sketch-to-device](https://github.com/VincenzoImp/sketch-to-device), commit [8826f2e](https://github.com/VincenzoImp/sketch-to-device/commit/8826f2edb8ab662cc2e524e4867661832c8d04cd), containing 100 audited files. The independently accepted export has SHA-256 `01f3b33eaa2968d2b3ebe02e1df55934da414a82ad4de69df4484b0a7391b08b`. This identifies the initial snapshot: subsequent local document or product changes require another reviewed commit/push and remote verification. The user requests periodic reviewed commits. Use the independently reviewed [checkpoint helper](scripts/checkpoint_github.py) with `--publish --message "Short description"` for follow-up commits; it audits the public tree, pushes without force and verifies the remote. Local changes remain unpublished until that succeeds. Managed Git/network restrictions were reconfirmed around 15:07; user authorization did not remove them. Original PDFs, `.env`, private media and credentials remain excluded.
 
 To check the public context and current source allowlist, run `python3 scripts/check_context.py --export`. This validates local document links and scans known credential signatures/configured secret values; it does not test the app or prove GitHub publication. The snapshot is written to ignored `artifacts/context-public.tar.gz`. Unlisted future source types and Git history need separate review before publication.

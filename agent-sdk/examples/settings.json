@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "app_id": "shared_settings",
+  "version": 1,
+  "name": "Shared Settings",
+  "target": {
+    "width": 320,
+    "height": 480,
+    "orientation": "portrait"
+  },
+  "theme": {
+    "palette": "dark_green",
+    "font_size": "medium"
+  },
+  "initial_screen": "home",
+  "state": {
+    "enabled": false
+  },
+  "screens": [
+    {
+      "id": "home",
+      "title": "Settings",
+      "widgets": [
+        {
+          "id": "enabled",
+          "type": "toggle",
+          "state_key": "enabled",
+          "text": "Enabled"
+        },
+        {
+          "id": "details",
+          "type": "button",
+          "text": "Details",
+          "on_press": [
+            {
+              "type": "navigate",
+              "screen_id": "details"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "details",
+      "title": "Details",
+      "widgets": [
+        {
+          "id": "same_setting",
+          "type": "toggle",
+          "state_key": "enabled",
+          "text": "Same setting"
+        },
+        {
+          "id": "back",
+          "type": "button",
+          "text": "Back",
+          "on_press": [
+            {
+              "type": "navigate",
+              "screen_id": "home"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

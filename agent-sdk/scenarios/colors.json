@@ -1,0 +1,37 @@
+{
+  "scenario_version": 1,
+  "steps": [
+    {
+      "op": "press",
+      "widget_id": "button_pink",
+      "at_ms": 0,
+      "expect": {
+        "screen": "blue"
+      }
+    },
+    {
+      "op": "press",
+      "widget_id": "button_blue",
+      "at_ms": 1,
+      "expect": {
+        "screen": "green"
+      }
+    },
+    {
+      "op": "press",
+      "widget_id": "button_green",
+      "at_ms": 2,
+      "expect": {
+        "screen": "pink"
+      }
+    },
+    {
+      "op": "press",
+      "widget_id": "button_pink",
+      "at_ms": 3,
+      "expect": {
+        "screen": "blue"
+      }
+    }
+  ]
+}

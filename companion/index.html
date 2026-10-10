@@ -19,10 +19,10 @@
         <label for="prompt">What should your device do?</label>
         <textarea id="prompt" maxlength="6000" rows="5" placeholder="Make a 10-second tap game. Show a big Tap button, a live score, a countdown, and a Play again button."></textarea>
         <div class="attachments">
-          <label class="attach" for="files">＋ Add sketch or recording<input id="files" type="file" accept="image/jpeg,image/png,image/webp,audio/*,video/mp4,video/webm,video/quicktime" multiple></label>
+          <label class="attach" for="files">＋ Add sketch or recording<input id="files" type="file" accept="image/jpeg,image/png,image/webp,audio/wav,audio/x-wav,audio/webm,audio/mp4,audio/mpeg,audio/ogg,video/mp4,video/webm,video/quicktime" multiple></label>
           <button type="button" id="record" class="secondary">● Record voice</button>
         </div>
-        <p class="hint">Up to 3 files · 12 MB each, 20 MB total · recordings up to 30 seconds · English voice</p>
+        <p class="hint">Up to 3 files · 20 MiB each, 32 MiB total · audio up to 60 seconds, video 30 seconds · English voice. Photos up to 40 megapixels are resized to 2048 pixels. Video uses speech and one midpoint frame.</p>
         <ul id="file-list" class="file-list"></ul>
         <button id="generate" type="submit" class="primary">Generate and install <span aria-hidden="true">↗</span></button>
         <p class="small">One action. Your verified app installs automatically.</p>

@@ -1,30 +1,24 @@
-# Start here when resuming the project
+# Session handoff
 
-This is the entry point for a session that has no conversation history. Read [AGENTS.md](../AGENTS.md), this page and [current status](00-status.md), then follow the role map below. Do not ingest the whole archive or private PDFs by default.
+## One-minute state
 
-## Intent in one minute
+The user wants one Android request to create and install an app on the physical Waveshare device. The demo works for two separate generated games: voice sequence6Rocket Tata (including ordinary reboot) and photo-only sequence7Star Tap. The voice title was misrecognized; photo-only did not include the proposed20-second narration. Two later color-button jobs failed at the provider and left Star Tap active. Exact evidence and limits live in [the ledger](12-work-ledger.md).
 
-The user is a solo participant in the 10 October 2026 Agentic AI Hack Zürich. They want a convincing, feasible **one-shot creation demo**: one English concept submitted from an Android companion becomes an interactive app on their Waveshare ESP32-P4-WIFI6-Touch-LCD-3.5. Google DeepMind and Gradium must perform observable work. The camera and battery are present; initial input comes from the phone.
+**Current correction:** the user expected real app programming with useful documentation, web research, graphics/assets and broad device features, not a fixed5-widget/7-action language. They explicitly request pragmatic feasibility checks, preservation of this direction and frequent public commits. [Programmable platform](15-programmable-apps.md) supersedes the old permanent-DSL boundary. The selected first experiment is official QuickJS-NG0.14.0, preserving IDF5.5.5/BSP/LVGL and existing apps. The isolated engine works on the host and cross-compiles for P4; no programmable app runtime is integrated or deployed yet.
 
-The selected implementation is a stable ESP-IDF/LVGL firmware that runs bounded JSON AppSpec packages. The managed Gemini agent interprets the concept and builds/tests the package; Gradium processes the spoken request. The selected paired device receives the checked package automatically under one Generate and install action. The candidate tap game demonstrates real behavior; a bring-up fixture must not replace generation in the final demo.
+Local source includes tested0.2button colors, expanded normalized media, reviewed provider diagnostics/timing and an incremental publisher. Agent SDK/skills, web-tool declarations and an isolated engine probe are implemented in source. The source runtime0.2binary has compiled but is not flashed; the current service/device still represent the previous accepted baseline. QuickJS source verification is resolved; actual host resource tests and isolated target build passed. Do not ask for another download.
 
-The user originally described a rich chat with video, audio, text and attachments, then emphasized a simple one-shot demonstration. Preserve the wider product direction, but conversation revisions, PDFs, app libraries, interactive previews and on-device media capture are later work. See [product scope](02-product.md) and [decision history](10-decisions.md).
+The first public snapshot is verified at [GitHub](https://github.com/VincenzoImp/sketch-to-device), commit8826f2edb8ab662cc2e524e4867661832c8d04cd. Later edits are not automatically committed. Managed Git metadata remains read-only and network/serial restricted despite user authorization; [readiness](11-readiness.md) owns those facts. The reviewed checkpoint helper needs a normal-Terminal execution only after a coherent public slice is ready.
 
-## What is happening now
+## Next actions
 
-**Active phase at 14:54: visual/voice repeat after the first complete voice-generated physical run; ready-by target 17:00.** Fresh Android audio passed Gradium, managed Gemini tools, artifact/host validation and exact active ACK for sequence 6 rocket_tata. The user confirmed the 15-second game, Play again reset, phone confirmation and ordinary reboot restoration. Requested Rocket Tap became Rocket Tata; transcript extraction selected generic checks, while stricter intended-game checks passed independently afterward. Source is frozen. The user is preparing a 20-second STAR TAP sketch-plus-voice request; the new observer is active but no second job/result exists yet.
+1. Check time, tools and active ownership in [the ledger](12-work-ledger.md). Preserve the working service, endpoint, hotspot and saved app.
+2. Continue from the passed engine host/resource and isolated P4 build gates; next prove UI binding and lifecycle. Do not integrate UI/peripherals before the engine gate. Keep difficult platform migrations separate from the working demo.
+3. Live-verify and coherently activate the reviewed SDK/skills and declared web tools. The lookup prohibition is already removed in source. Image-generation/custom-function research is complete; a broker and device asset path remain further implementation. Do not advertise APIs the device cannot execute.
+4. Reconcile source contracts/tests/docs, audit public files and publish reviewed checkpoints with verified remoteSHA. Keep private media/configuration out of the public tree.
+5. Activate a coherent tested slice before a fresh live request. Remaining product gates include combined photo+voice, intent/reference fidelity, physical fault recovery and rehearsal. Ordinary reboot and a second generated app already have evidence; do not repeat them as missing setup.
 
-Public research and operating documents exist. Read the [work ledger](12-work-ledger.md) for current code and probe ownership. Firmware C runtime/LVGL renderer, backend HTTP/deployment/generation and companion are implemented as independently reviewed slices. Actual integration tests are underway; none of these alone establishes the complete product. Support scripts and headless reference behavior do not establish provider or physical device success.
-
-Current evidence on 10 October: board/backup/setup, fixture delivery, one generated physical app and ordinary reboot restoration passed. Working Android hotspot, service and endpoint are already configured. The first generated ACK took 90.598 seconds from observer first-seen; provider completed with two execution pairs and 24,026 effective tokens. Source and served hashes differ by publication serialization and are recorded separately. Production measured requirements were false/null; strict 15-second host behavior checks passed independently after installation, and a separate native C check verified parsing only. These results do not rewrite the production-check history. Title and full transcript fidelity remain limited. No visual generation or second generated app is established; GitHub publication is unverified. The [readiness register](11-readiness.md) owns remaining conditions.
-
-## Next actions in the current phase
-
-1. Read [work ledger](12-work-ledger.md), check active ownership, and continue the first incomplete item within the latest user request. Do not redo completed research without a concrete gap.
-2. Preserve the public context audit and archive after document edits. Resolve the authenticated GitHub publishing route if available; publication is already authorized, but no remote repository has been verified.
-3. Continue the incomplete gates in the [execution pipeline](05-execution-plan.md): observe the requested STAR TAP sketch/voice submission as a new job, then verify actual visual influence, 20-second duration/title, new exact ACK and physical controls. The second 600-second observer started around 14:52 and excludes four prior phone jobs; the earlier observer ended and is archived. The user clarified the prior App installed message referred to Rocket Tata, not a second app. Setup and ordinary reboot are complete; do not repeat them as unfinished tasks. Finish remaining negative/recovery/rehearsal and publication gates, preserving source freeze unless new evidence warrants a fix.
-
-The stated event deadlines belong to **10 October 2026, Europe/Zurich**. A later session must check the current date/time and user objective. Do not reuse an expired same-day schedule as though hours remain.
+The event and prior17:00ready-by target are on10October2026, Europe/Zurich. The user says there is time for this correction but explicitly asks for pragmatism. Check actual time and scope instead of enforcing an old self-imposed feature freeze or promising an unmeasured migration deadline.
 
 ## Read by responsibility
 

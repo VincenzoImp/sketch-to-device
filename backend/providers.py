@@ -10,7 +10,9 @@ import time
 from urllib.parse import urlencode
 import wave
 
-from scripts.probe_providers import HOSTS, ROOT, ProbeError, analyze_response, load_keys, network_preflight
+from scripts.probe_providers import (HOSTS, ROOT, GOOGLE_ERROR_STATUSES, GOOGLE_ERROR_REASONS,
+                                    ProbeError, analyze_response, load_keys, network_preflight)
+from .media_limits import MAX_AUDIO_SECONDS
 
 
 MODEL = "gemini-3.8-flash"
@@ -35,13 +37,24 @@ ERROR_MESSAGES = {
     "provider_transport": "A provider connection ended before completion.",
     "input": "Provide a short request or a supported recording or image.",
     "media": "The attachment format could not be processed.",
-    "media_limit": "Use at most three attachments, 20 MiB total, and recordings up to 30 seconds.",
+    "media_limit": "Use at most three attachments, 20 MiB each and 32 MiB total; audio up to 60 seconds or video up to 30 seconds.",
     "media_tools": "FFmpeg and FFprobe are required for this recording format.",
     "speech": "Speech recognition did not complete. Try a clear English recording.",
     "tool_protocol": "The model did not complete the required validation tools.",
     "repair_limit": "The generated app failed validation after the repair limit.",
     "generation": "The app could not be generated. Try a simpler supported request.",
+    "unsupported_request": "This request needs a capability the device does not support yet. Your previous app is preserved.",
+    "media_dimensions": "Use a photo with smaller pixel dimensions.",
+    "media_size": "The attachment is too large. Choose a smaller file.",
+    "media_duration": "Use audio up to 60 seconds or video up to 30 seconds.",
+    "media_timeout": "The attachment took too long to process. Choose a smaller file.",
 }
+UNSUPPORTED_FEATURES = {"camera_capture", "microphone_recording", "speaker_playback", "network_requests",
+                        "file_access", "gpio", "dynamic_text", "conditional_logic", "freeform_layout",
+                        "runtime_limits"}
+HTTP_CATEGORIES = {"request_rejected", "authentication_rejected", "permission_rejected",
+                   "route_or_model_unavailable", "quota_or_rate_limit", "provider_http_error",
+                   "redirect_refused", "policy_or_authentication_rejected"} | set(GOOGLE_ERROR_REASONS.values())
 DIAGNOSTIC_REASONS = {
     "response_too_large", "invalid_json_response", "unexpected_response_shape",
     "invalid_resource_id", "unknown_interaction_status", "unexpected_agent",
@@ -62,12 +75,21 @@ def safe_diagnostics(value):
         return {}
     result = {}
     for name, allowed in (("phase", DIAGNOSTIC_PHASES), ("reason", DIAGNOSTIC_REASONS),
-                          ("interaction_status", INTERACTION_STATES)):
+                          ("interaction_status", INTERACTION_STATES), ("http_category", HTTP_CATEGORIES),
+                          ("google_error_status", GOOGLE_ERROR_STATUSES),
+                          ("google_error_reason", set(GOOGLE_ERROR_REASONS)),
+                          ("cancellation", {"not_needed", "not_attempted", "confirmed", "unconfirmed", "failed"})):
         if type(value.get(name)) is str and value[name] in allowed:
             result[name] = value[name]
-    for name in ("attempt", "elapsed_ms", "token_budget", "effective_tokens", "artifact_matches"):
+    for name in ("attempt", "elapsed_ms", "token_budget", "effective_tokens", "artifact_matches", "poll_count"):
         if type(value.get(name)) is int and 0 <= value[name] <= 10**12:
             result[name] = value[name]
+    if type(value.get("http_status")) is int and 100 <= value["http_status"] <= 599:
+        result["http_status"] = value["http_status"]
+    features = value.get("unsupported_features")
+    if type(features) is list and len(features) <= len(UNSUPPORTED_FEATURES):
+        result["unsupported_features"] = sorted({item for item in features
+                                                  if type(item) is str and item in UNSUPPORTED_FEATURES})
     for name, allowed in (("usage", USAGE_FIELDS), ("step_counts", STEP_TYPES)):
         if type(value.get(name)) is dict:
             result[name] = {key: item for key, item in value[name].items()
@@ -95,12 +117,15 @@ def remaining(deadline, maximum=60):
 def _http_error(provider, status, raw):
     safe = analyze_response(provider, status, raw, MODEL)
     reason = safe.get("result")
+    diagnostic = {"http_status": status, "http_category": reason,
+                  "google_error_status": safe.get("google_error_status"),
+                  "google_error_reason": safe.get("google_error_reason")}
     if status in (401, 403) or reason in {"api_key_invalid_or_expired", "api_key_service_blocked",
                                          "api_key_application_blocked", "service_disabled"}:
-        return ProviderError("provider_auth")
+        return ProviderError("provider_auth", diagnostic)
     if status == 429 or reason in {"quota_or_rate_limit", "billing_disabled"}:
-        return ProviderError("provider_quota")
-    return ProviderError("provider_request")
+        return ProviderError("provider_quota", diagnostic)
+    return ProviderError("provider_request", diagnostic)
 
 
 def request(provider, key, path, body, content_type, deadline, max_response=524288, method="POST"):
@@ -209,7 +234,7 @@ def wav_duration(raw):
                 raise ProviderError("media")
     except (wave.Error, EOFError, OSError, ZeroDivisionError):
         raise ProviderError("media") from None
-    if not 0 < duration <= 30:
+    if not 0 < duration <= MAX_AUDIO_SECONDS:
         raise ProviderError("media_limit")
     return duration
 

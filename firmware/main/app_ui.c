@@ -104,8 +104,11 @@ static bool build(ui_view *next, const as_runtime *r) {
             if (!label(area,w->text,16,y,288,height,fg)) return false;
         } else {
             bool button = w->type == AS_BUTTON || w->type == AS_TOGGLE;
+            bool custom_color = w->type == AS_BUTTON && w->has_background_color;
+            uint32_t control_bg = custom_color ? w->background_color : accent;
+            uint32_t control_fg = custom_color ? as_color_foreground(control_bg) : on_accent;
             lv_obj_t *control = button ? lv_button_create(area) : lv_obj_create(area);
-            plain_box(control,16,y,288,height,button ? accent : bg);
+            plain_box(control,16,y,288,height,button ? control_bg : bg);
             lv_obj_set_style_radius(control,8,0);
             if (button) {
                 next->bindings[i] = (ui_event){.widget=i,.token={r->activation,r->entry}};
@@ -119,7 +122,7 @@ static bool build(ui_view *next, const as_runtime *r) {
             } else if (w->type == AS_TOGGLE) {
                 next->indicators[i] = label(control,r->state[w->state] ? "+" : "-",8,8,32,24,on_accent);
                 if (!next->indicators[i] || !label(control,w->text,40,8,240,height-16,on_accent)) return false;
-            } else if (!label(control,w->text,8,8,272,height-16,on_accent)) return false;
+            } else if (!label(control,w->text,8,8,272,height-16,control_fg)) return false;
         }
         y += height;
     }

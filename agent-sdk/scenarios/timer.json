@@ -1,0 +1,95 @@
+{
+  "scenario_version": 1,
+  "steps": [
+    {
+      "op": "press",
+      "widget_id": "start",
+      "at_ms": 0,
+      "expect": {
+        "timers": {
+          "countdown": {
+            "status": "running",
+            "remaining_ms": 90000
+          }
+        }
+      }
+    },
+    {
+      "op": "press",
+      "widget_id": "pause",
+      "at_ms": 10000,
+      "expect": {
+        "timers": {
+          "countdown": {
+            "status": "paused",
+            "remaining_ms": 80000
+          }
+        }
+      }
+    },
+    {
+      "op": "advance",
+      "at_ms": 80000,
+      "expect": {
+        "timers": {
+          "countdown": {
+            "status": "paused",
+            "remaining_ms": 80000
+          }
+        }
+      }
+    },
+    {
+      "op": "press",
+      "widget_id": "start",
+      "at_ms": 90000,
+      "expect": {
+        "timers": {
+          "countdown": {
+            "status": "running",
+            "remaining_ms": 80000
+          }
+        }
+      }
+    },
+    {
+      "op": "advance",
+      "at_ms": 169999,
+      "expect": {
+        "screen": "home",
+        "timers": {
+          "countdown": {
+            "remaining_ms": 1
+          }
+        }
+      }
+    },
+    {
+      "op": "advance",
+      "at_ms": 170000,
+      "expect": {
+        "screen": "done",
+        "timers": {
+          "countdown": {
+            "status": "completed",
+            "remaining_ms": 0
+          }
+        }
+      }
+    },
+    {
+      "op": "press",
+      "widget_id": "again",
+      "at_ms": 170001,
+      "expect": {
+        "screen": "home",
+        "timers": {
+          "countdown": {
+            "status": "idle",
+            "remaining_ms": 90000
+          }
+        }
+      }
+    }
+  ]
+}

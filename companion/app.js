@@ -13,8 +13,12 @@ const errors = {
   authentication_required:'Open your private workspace link to connect.',
   generation_busy:'An app is already being built. Please wait for it to finish.',
   input_required:'Describe your app or add a recording.',
-  unsupported_or_oversized_media:'Choose a supported image or recording smaller than 12 MB.',
-  combined_media_too_large:'Keep all attachments together under 20 MB.',
+  unsupported_request:'This idea needs features the current app format cannot provide. Try screens with text, buttons, counters, toggles or timers.',
+  unsupported_or_oversized_media:'Choose a supported image or recording up to 20 MiB.',
+  invalid_body_size:'This upload is empty or too large. Choose a file up to 20 MiB.',
+  incomplete_upload:'The upload was interrupted. Check your connection and try again.',
+  upload_timeout:'The upload stopped responding. Check your connection or choose a smaller file, then try again.',
+  combined_media_too_large:'Keep all attachments together within 32 MiB.',
   media_conversion_unavailable:'Audio conversion is not ready on the server yet.',
   service_error:'The service could not complete this step. Please try again.',
   request_conflict:'This request changed. Submit it as a new app.',
@@ -28,7 +32,12 @@ const errors = {
   deadline:'App generation took too long. Try a simpler description.',
   speech:'The recording could not be understood. Try a clear, short English voice note.',
   media:'This attachment could not be read. Try another image or a short recording.',
-  media_limit:'Use up to 3 attachments, 20 MB total, with recordings no longer than 30 seconds.',
+  media_limit:'Use up to 3 files, 20 MiB each and 32 MiB total. Audio can be 60 seconds; video 30 seconds.',
+  media_size:'Choose a file up to 20 MiB. If a photo still fails, export a smaller JPEG.',
+  media_dimensions:'Choose a photo up to 40 megapixels, with neither side larger than 12,000 pixels.',
+  media_duration:'Use audio up to 60 seconds or video up to 30 seconds. Longer recordings are not cut automatically.',
+  media_timeout:'This attachment took too long to process. Try a smaller photo or a shorter recording.',
+  media_tools:'Media processing is unavailable on the server. Try a text request while it is checked.',
   input:'Describe your app or add a supported image or recording.',
   repair_limit:'The app did not pass its checks. Try a simpler description.',
   tool_protocol:'The app did not pass its checks. Try a simpler description.'
@@ -64,7 +73,7 @@ function renderFiles() {
   $('#file-list').replaceChildren();
   attachments.forEach((file, index) => {
     const row = document.createElement('li'), name = document.createElement('span'), remove = document.createElement('button');
-    name.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`;
+    name.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MiB`;
     remove.textContent = 'Remove'; remove.type = 'button'; remove.disabled = working;
     remove.onclick = () => { attachments.splice(index, 1); renderFiles(); };
     row.append(name, remove); $('#file-list').append(row);
@@ -73,8 +82,8 @@ function renderFiles() {
 function addFiles(files) {
   for (const file of files) {
     if (attachments.length >= 3) { showError('Choose up to 3 attachments.'); break; }
-    if (file.size > 12 * 1024 * 1024) { showError('Each attachment must be smaller than 12 MB.'); continue; }
-    if (attachments.reduce((total, item) => total + item.size, 0) + file.size > 20 * 1024 * 1024) { showError('Keep all attachments together under 20 MB.'); continue; }
+    if (!file.size || file.size > 20 * 1024 * 1024) { showError('Each attachment must contain data and be no larger than 20 MiB.'); continue; }
+    if (attachments.reduce((total, item) => total + item.size, 0) + file.size > 32 * 1024 * 1024) { showError('Keep all attachments together within 32 MiB.'); continue; }
     attachments.push(file);
   }
   renderFiles();
@@ -96,7 +105,7 @@ $('#record').onclick = async () => {
       recorder = null; $('#record').textContent = '● Record voice'; $('#generate').disabled = false;
     };
     recorder.start(); $('#record').textContent = '■ Stop recording'; $('#generate').disabled = true;
-    recordingTimer = setTimeout(() => { if (recorder?.state === 'recording') recorder.stop(); }, 30000);
+    recordingTimer = setTimeout(() => { if (recorder?.state === 'recording') recorder.stop(); }, 60000);
   } catch (_) { if (captureStream) captureStream.getTracks().forEach(track => track.stop()); showError('Microphone access was unavailable. Add a recording or type your idea.'); }
 };
 function progress(stage, detail, deployment, diagnostics) {

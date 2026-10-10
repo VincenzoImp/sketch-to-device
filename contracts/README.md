@@ -55,3 +55,7 @@ Scenarios contain `scenario_version: 1` and up to 1,000 ordered steps: `press`, 
 ## Observed verification
 
 On 10 October 2026, Python 3.9.6 ran all 33 acceptance tests successfully. Both CLI scenarios passed: Tap Sprint executed seven steps with five checkpoints; Focus Timer executed eight with five checkpoints. Checks cover malformed fields/numbers/references, duplicate keys/IDs, resource boundaries, viewport overflow, atomic action failure, timer order, deadline taps, replay, stale events, shell suspension, invalid replacement and deliberately wrong scenario expectations. Schema identifier/text/name patterns also reject final LF/CR under Python regex checks. A separate JSON Schema engine and the physical display have not been exercised.
+
+## Runtime 0.2.0 extension
+
+Optional button `background_color` accepts exact `#RRGGBB`. The host and device validate the same syntax, and the device selects contrasting black/white text. [Hello Colors](fixtures/hello-colors.json) demonstrates a three-screen finite color cycle using existing navigation. Old packages retain theme colors; no storage migration is required. Native checks are in `firmware/tests/check_colors.py`. Host and native checks do not establish physical color rendering; the updated firmware must be flashed and observed.

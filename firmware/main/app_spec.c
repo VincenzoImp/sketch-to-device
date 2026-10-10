@@ -29,6 +29,32 @@ static bool text_ok(const char *s, size_t maximum) {
     for (; *s; ++s) if ((unsigned char)*s < 32 || (unsigned char)*s > 126) return false;
     return true;
 }
+static bool color(const char *s, uint32_t *rgb) {
+    if (!s || strlen(s) != 7 || *s != '#') return false;
+    uint32_t value = 0;
+    for (int i = 1; i < 7; ++i) {
+        unsigned digit;
+        if (s[i] >= '0' && s[i] <= '9') digit = (unsigned)(s[i] - '0');
+        else if (s[i] >= 'a' && s[i] <= 'f') digit = (unsigned)(s[i] - 'a' + 10);
+        else if (s[i] >= 'A' && s[i] <= 'F') digit = (unsigned)(s[i] - 'A' + 10);
+        else return false;
+        value = (value << 4) | digit;
+    }
+    *rgb = value;
+    return true;
+}
+static double linear_channel(unsigned value) {
+    double channel = value / 255.0;
+    return channel <= 0.04045 ? channel / 12.92 : pow((channel + 0.055) / 1.055, 2.4);
+}
+uint32_t as_color_foreground(uint32_t rgb) {
+    double luminance = 0.2126 * linear_channel((rgb >> 16) & 255) +
+                       0.7152 * linear_channel((rgb >> 8) & 255) +
+                       0.0722 * linear_channel(rgb & 255);
+    double black = (luminance + 0.05) / 0.05;
+    double white = 1.05 / (luminance + 0.05);
+    return black >= white ? 0x000000 : 0xFFFFFF;
+}
 static bool word_in(const char *words, const char *key) {
     if (!key) return false;
     size_t n = strlen(key);
@@ -201,8 +227,12 @@ bool as_parse(const char *bytes, size_t size, as_app *a, const char **error) {
                 if (!object(w,"id type text","")) goto done;
                 wd->type = AS_LABEL;
             } else if (equal(kind,"button")) {
-                if (!object(w,"id type text on_press","")) goto done;
+                if (!object(w,"id type text on_press","background_color")) goto done;
                 wd->type = AS_BUTTON;
+                if (get(w,"background_color")) {
+                    if (!color(str(w,"background_color"),&wd->background_color)) goto done;
+                    wd->has_background_color = true;
+                }
             } else if (equal(kind,"counter") || equal(kind,"toggle")) {
                 bool toggle = equal(kind,"toggle");
                 if (!object(w,toggle ? "id type text state_key" : "id type state_key",toggle ? "" : "text")) goto done;

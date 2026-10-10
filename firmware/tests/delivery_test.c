@@ -110,6 +110,15 @@ int main(int argc,char **argv) {
     assert(!protocol_json("{\"x\":\"\\u0000\"}",14));
     assert(!protocol_json("{} trailing",11));
     char valid_envelope[2048];strcpy(valid_envelope,envelope);
+    const char *versions[]={"0.1.0","0.2.0","0.0.0","0.3.0","1.0.0","0.2","0.2.0 ",""};
+    for(size_t i=0;i<sizeof(versions)/sizeof(versions[0]);++i){
+        cJSON *j=cJSON_Parse(valid_envelope);assert(j);
+        cJSON *m=cJSON_GetObjectItem(cJSON_GetObjectItem(j,"desired"),"manifest");
+        assert(cJSON_ReplaceItemInObject(m,"min_runtime_version",cJSON_CreateString(versions[i])));
+        char *encoded=cJSON_PrintUnformatted(j);assert(encoded && strlen(encoded)<sizeof(envelope));strcpy(envelope,encoded);
+        assert(desired(&parsed)==(i<2?1:-1));free(encoded);cJSON_Delete(j);
+    }
+    strcpy(envelope,valid_envelope);
     char *schema=strstr(envelope,"\"schema_version\":1");assert(schema);schema[strlen("\"schema_version\":")]='2';assert(desired(&parsed)==-1);strcpy(envelope,valid_envelope);
     install(&first);
     assert(active_acks==1 && metadata.active==0 && shown==installed_app);

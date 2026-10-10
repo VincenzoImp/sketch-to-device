@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "app_id": "inventory_count",
+  "version": 1,
+  "name": "Inventory Count",
+  "target": {
+    "width": 320,
+    "height": 480,
+    "orientation": "portrait"
+  },
+  "theme": {
+    "palette": "dark_green",
+    "font_size": "medium"
+  },
+  "initial_screen": "home",
+  "state": {
+    "count": 0
+  },
+  "screens": [
+    {
+      "id": "home",
+      "title": "Inventory Count",
+      "widgets": [
+        {
+          "id": "count",
+          "type": "counter",
+          "state_key": "count",
+          "text": "Items"
+        },
+        {
+          "id": "add",
+          "type": "button",
+          "text": "Add one",
+          "on_press": [
+            {
+              "type": "increment",
+              "state_key": "count",
+              "amount": 1
+            }
+          ]
+        },
+        {
+          "id": "reset",
+          "type": "button",
+          "text": "Reset",
+          "on_press": [
+            {
+              "type": "set",
+              "state_key": "count",
+              "value": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

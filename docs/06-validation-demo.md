@@ -78,7 +78,7 @@ Fallback order:
 ## Delivery checklist
 
 - Competition opt-in completed by 19:00 using the actual organizer process.
-- App and firmware versions frozen before the 17:00 user target, with feature freeze at 16:00.
+- Preserve a tested app/firmware combination for the17:00ready-by target. The user reopened scope for the [programmable platform correction](15-programmable-apps.md); the earlier16:00feature freeze is historical. Integrate reviewed, practically verified slices and keep unproved experiments separate from the working demo.
 - README contains tested setup/build/flash/run commands once implementation exists.
 - Provider configuration comes from private environment settings; exported artifacts contain no credentials.
 - Project code, AppSpec schema, sample artifacts, traces, demo video and pitch are exported from temporary services.

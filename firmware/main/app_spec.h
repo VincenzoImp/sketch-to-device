@@ -20,6 +20,8 @@ typedef struct { char id[AS_ID]; bool boolean; int32_t initial; } as_state_def;
 typedef struct {
     char id[AS_ID], text[AS_TEXT];
     as_widget_type type;
+    bool has_background_color;
+    uint32_t background_color;
     int screen, state, timer, duration, action_count;
     as_action actions[AS_MAX_ACTIONS];
 } as_widget;
@@ -52,6 +54,8 @@ int as_find_widget(const as_app *app, const char *id);
 int as_find_state(const as_app *app, const char *id);
 int as_widget_height(const as_widget *widget);
 int as_text_height(const char *text, int available);
+/* Black or white, whichever has higher sRGB relative-luminance contrast. */
+uint32_t as_color_foreground(uint32_t rgb);
 void as_install(as_runtime *rt, const as_app *app, int64_t now, uint64_t activation);
 void as_advance(as_runtime *rt, int64_t now);
 bool as_press(as_runtime *rt, int widget, int64_t now, as_event_token token);

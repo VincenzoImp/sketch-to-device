@@ -65,6 +65,9 @@ static bool hash_valid(const char *s) {
     for (; *s; ++s) if (!(*s >= '0' && *s <= '9') && !(*s >= 'a' && *s <= 'f')) return false;
     return true;
 }
+static bool runtime_supported(const char *version) {
+    return version && (!strcmp(version,"0.1.0") || !strcmp(version,"0.2.0"));
+}
 static bool digest_matches(const char *bytes, size_t size, const char *expected) {
     unsigned char digest[32]; char hex[65];
     if (mbedtls_sha256((const unsigned char *)bytes,size,digest,0) != 0) return false;
@@ -163,7 +166,7 @@ static int desired(deployment *out) {
         !token(string(d,"deployment_id"),128) || !number(item(d,"sequence"),1,9007199254740991.0) ||
         !app_id(string(m,"app_id")) || !number(item(m,"version"),1,INT32_MAX) ||
         !number(item(m,"schema_version"),1,1) || !number(item(m,"size_bytes"),1,AS_MAX_BYTES) ||
-        !hash_valid(string(m,"sha256")) || !string(m,"min_runtime_version") || strcmp(string(m,"min_runtime_version"),"0.1.0")) goto done;
+        !hash_valid(string(m,"sha256")) || !runtime_supported(string(m,"min_runtime_version"))) goto done;
     memset(out,0,sizeof(*out));
     strcpy(out->deployment_id,string(d,"deployment_id")); strcpy(out->app_id,string(m,"app_id"));
     strcpy(out->sha256,string(m,"sha256")); out->sequence = (int64_t)item(d,"sequence")->valuedouble;

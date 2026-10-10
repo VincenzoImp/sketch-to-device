@@ -75,6 +75,17 @@ class ContextExportTests(unittest.TestCase):
         (self.root / "docs/orphan.md").write_text("# Unlinked\n")
         self.run_check(False)
 
+    def test_provisioned_wifi_and_session_values_are_scanned(self):
+        (self.root / "firmware").mkdir()
+        (self.root / "private/service").mkdir(parents=True)
+        (self.root / "firmware/sdkconfig.private").write_text('CONFIG_SKETCH_WIFI_PASSWORD="local-only-password"\n')
+        (self.root / "private/service/demo-config.json").write_text('{"session_token":"local-only-session"}')
+        for value in ("local-only-password", "local-only-session"):
+            (self.root / "README.md").write_text(self.public["README.md"] + value)
+            self.run_check(False, private_values=(value,))
+        (self.root / "README.md").write_text(self.public["README.md"])
+        self.run_check(True)
+
     def test_symlink(self):
         path = self.root / "docs/spec.md"
         path.unlink()

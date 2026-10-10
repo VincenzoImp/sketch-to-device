@@ -365,6 +365,10 @@
               },
               "minItems": 0,
               "maxItems": 4
+            },
+            "background_color": {
+              "type": "string",
+              "pattern": "^#[0-9A-Fa-f]{6}(?![\\s\\S])"
             }
           },
           "required": [

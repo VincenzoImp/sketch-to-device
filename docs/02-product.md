@@ -38,7 +38,7 @@ Suggested one-shot English prompt, with a matching sketch:
 
 The runtime must already support the declared actions and timer events. Validate zero taps, multiple taps, expiry, taps after expiry and restart. The score and timer are local device behavior; they must keep working after the network disconnects. This candidate does not imply physics, arbitrary animation or unrestricted game code generation.
 
-Hold the sketch still for several seconds. Aim for a 15–30 second recording; shorter recordings are accepted. The [canonical contract](04-contracts.md) enforces a 30-second maximum and a 20 MiB upload limit. The game's 10-second round is a separate setting.
+Hold the sketch still for several seconds. Aim for a 15–30 second recording; shorter recordings are accepted. The source [canonical contract](04-contracts.md) allows audio up to60seconds, video up to30seconds,20MiB per file and32MiB combined; the running service must be restarted to adopt source changes. The game's 10-second round is a separate setting.
 
 ## Priorities
 
@@ -60,9 +60,9 @@ These priorities describe the selected working implementation. [Decision D06](10
 
 The first engineering slice can be text → package → device. Voice and visual input then complete the main two-partner demonstration. A text-only fallback without a tested, app-specific Gradium TTS call does not prove both partner integrations; even with TTS, it does not demonstrate multimodal input.
 
-## Initial runtime boundaries
+## Implemented baseline and expanded product direction
 
-The firmware runs a fixed, versioned declarative format with screens, text, touch controls, local variables, counters, timers and supported navigation. The generated package is an app within those capabilities. Arbitrary Android apps, web pages and native firmware are outside the initial contract.
+The deployed firmware runs a fixed declarative format with screens, touch controls, variables and timers. That was an implementation choice for the initial proof. The user now requires broader real app programming, with consultable SDK documentation and device features; the earlier P1/P2 priorities above describe the initial rollout, not a prohibition on that work. [Programmable apps and the device platform](15-programmable-apps.md) owns the new direction, runtime comparison, shell design and implementation gates. A JavaScript engine does not imply Android or browser compatibility.
 
 Generation and updates require remote services; local actions continue offline after installation. The confirmed camera and battery are available hardware, but acquisition begins on the Android phone in the MVP.
 
@@ -80,4 +80,4 @@ Avoid claims of absolute novelty without dedicated research. A specific, underst
 
 Every generation receives the implemented schema, runtime capabilities, trusted validator/reference runtime, user prompt and supported media. The managed agent must produce an artifact and run the supplied check. The backend downloads the actual bytes and independently repeats validation and behavior checks; a prose claim of success is insufficient. See [generation implementation](../backend/generator.py) and [current evidence](research/managed-probe.md).
 
-AI-powered behavior inside a generated app is feasible through a future backend broker. Provider keys remain server-side; a permitted app action would request a constrained operation and display a bounded result with loading/error states. Runtime v1 currently has no network/AI action or dynamic text state. Do not advertise an Ask AI button as working intelligence or silently substitute a static answer. This extension follows the complete physical happy path and must fit the17:00 target.
+AI-powered behavior inside a generated app is feasible through a future backend broker. Provider keys remain server-side; a permitted app action would request a constrained operation and display a bounded result with loading/error states. Runtime v1 currently has no network/AI action or dynamic text state. Do not advertise an Ask AI button as working intelligence or silently substitute a static answer. The user has reopened this area alongside the programmable runtime; it still needs an implemented broker and tested capability contract.

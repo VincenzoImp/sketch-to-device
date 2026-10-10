@@ -35,7 +35,7 @@ All project artifacts must be in English: documentation, UI copy, source code co
 - The file ownership map in [session handoff](docs/09-session-handoff.md) determines where a fact belongs. Prefer links over maintaining duplicate technical contracts. Capture scope changes and superseded assumptions in the [decision register](docs/10-decisions.md).
 - Use current official API/SDK sources and record versions actually tested. Research notes are not authenticated smoke tests.
 - Do not infer silicon revision, pins, ESP-IDF compatibility, credentials, or quota from the board name. Capture verification evidence.
-- Freeze the MVP scope. A new capability requires a concrete need, an estimate, and compatibility with the shared contract.
+- The user has explicitly reopened the runtime scope: real programmable apps, a consultable SDK and broad device capabilities are the current priority. Preserve the working demo while testing the replacement. A new capability needs a concrete implementation, compatibility strategy and practical evidence; the earlier MVP freeze is not a user prohibition.
 
 ## Active research and implementation truth
 
@@ -55,8 +55,8 @@ Follow [independent review and practical verification](docs/13-quality-gates.md)
 
 ## Future implementation
 
-- Use one versioned AppSpec contract across the generator, validator, optional preview, and firmware. Freeze it before parallel development.
-- Never execute arbitrary generated code on the device. Keep secrets out of app bundles, frontend code, logs, and remote agent contexts.
+- Keep the existing versioned AppSpec compatible while developing a separately versioned programmable app ABI. The selected first feasibility probe is QuickJS-NG; see [programmable apps](docs/15-programmable-apps.md). Agree contracts before parallel implementation.
+- Generated programs require a controlled interpreter, resource budgets, bounded native APIs, lifecycle cleanup and recovery. The previous blanket ban on generated code was an implementation choice superseded by the user's request. This does not authorize apps to flash firmware, access credentials or execute host commands. Keep secrets out of app bundles, frontend code, logs, and remote agent contexts.
 - Revalidate generated artifacts on the backend. A model's completed status or statement that tests passed is insufficient evidence.
 - Report installed only after the device acknowledges the exact app ID, version, and hash. Do not present a simulator as physical hardware.
 - Follow the selected BSP's concurrency model for LVGL rendering and updates. Keep the previous application active if validation fails.

@@ -1,6 +1,6 @@
 # Implemented architecture and remaining integration checks
 
-This architecture prioritizes a complete path that can be verified within the hackathon day. The user has confirmed an Android phone and a Waveshare ESP32-P4-WIFI6-Touch-LCD-3.5 with camera and battery. ROM queries confirmed revision 3.2 and 16 MB flash. The configured firmware compiled and flashed; the user reports its built-in tap app works. Two managed generations and public HTTPS readiness passed. Downloaded-app activation, Android input and real Gradium speech remain integration checks; current evidence belongs in [the work ledger](12-work-ledger.md).
+This document describes the implemented AppSpec path. It has physical evidence for one voice-generated game and one photo-only game, plus reboot restoration of the first. The user has reopened the runtime design to support real programs and broad device APIs. [The programmable platform decision](15-programmable-apps.md) owns that proposed extension and its isolated QuickJS-NG feasibility gate. It is not implemented merely because the diagram or documentation exists. Current evidence belongs in [the ledger](12-work-ledger.md).
 
 The main interaction is **Generate and install** for a selected, paired device. That single action authorizes generation and automatic installation of the validated, reversible app package. There is no required transcript confirmation, follow-up question, or preview approval. Headless deterministic behavior simulation and physical-device tests are required; interactive preview is an optional P1 diagnostic feature.
 
@@ -28,7 +28,7 @@ The backend owns provider credentials and the authoritative sessions, jobs, pack
 
 In-browser camera/microphone access needs a secure origin, normally HTTPS. The Mac's HTTP LAN address opened on the phone is not equivalent to localhost. Offer upload from the gallery/camera first; test integrated recording on the actual Android phone. Sources: [getUserMedia](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia), [capture](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/capture).
 
-Negotiate recording MIME types at runtime and test actual decoding beyond `MediaRecorder.isTypeSupported()`. The implemented video reduction sends one midpoint JPEG frame to the managed agent and separately produces mono 24 kHz WAV for Gradium; it does not analyze a full video sequence. Source: [MediaRecorder](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder/isTypeSupported_static). FFmpeg is installed; real format-conversion and overlength-rejection checks pass. Actual Android capture is still a separate gate.
+Negotiate recording MIME types at runtime and test actual decoding beyond `MediaRecorder.isTypeSupported()`. The implemented video reduction sends one midpoint JPEG frame to the managed agent and separately produces mono 24 kHz WAV for Gradium; it does not analyze a full video sequence. Source: [MediaRecorder](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder/isTypeSupported_static). FFmpeg is installed; real format-conversion and overlength-rejection checks pass. Actual Android voice capture has passed; actual short-video capture remains a separate gate.
 
 Use an HTTPS endpoint reachable by both phone and board. The selected implementation uses the Mac backend and a temporary Cloudflare tunnel. After venue QUIC failures, HTTP/2 connected and the launcher verified the exact public asset before publishing the private QR link. Protect the demo session and preserve a local copy of its data. The device can use a 2.4 GHz hotspot with Internet access without needing direct phone-to-device connectivity.
 
@@ -78,7 +78,7 @@ Espressif provides an HTTP client with HTTPS and certificate verification. Test 
 
 | Topic | Current choice | Alternative and condition |
 | --- | --- | --- |
-| Device apps | Declarative JSON | Lua/WASM after the runtime and complete demo work |
+| Device apps | Deployed declarative JSON; QuickJS-NG selected for isolated feasibility probe | See [programmable platform](15-programmable-apps.md); preserve existing apps until the replacement passes |
 | App updates | Data packages | Firmware OTA for engine updates, outside the first path |
 | Capture | Android phone | Board camera/microphone as a later extension |
 | Transport | HTTPS polling | USB through the Mac if radio bring-up is blocked; disclose the limitation |

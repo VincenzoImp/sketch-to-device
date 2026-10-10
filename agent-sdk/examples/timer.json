@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "app_id": "interval_timer",
+  "version": 1,
+  "name": "Interval Timer",
+  "target": {
+    "width": 320,
+    "height": 480,
+    "orientation": "portrait"
+  },
+  "theme": {
+    "palette": "dark_green",
+    "font_size": "medium"
+  },
+  "initial_screen": "home",
+  "state": {},
+  "screens": [
+    {
+      "id": "home",
+      "title": "Interval Timer",
+      "widgets": [
+        {
+          "id": "countdown",
+          "type": "timer",
+          "duration_seconds": 90,
+          "text": "Remaining",
+          "on_complete": [
+            {
+              "type": "navigate",
+              "screen_id": "done"
+            }
+          ]
+        },
+        {
+          "id": "start",
+          "type": "button",
+          "text": "Start or resume",
+          "on_press": [
+            {
+              "type": "timer_start",
+              "widget_id": "countdown"
+            }
+          ]
+        },
+        {
+          "id": "pause",
+          "type": "button",
+          "text": "Pause",
+          "on_press": [
+            {
+              "type": "timer_pause",
+              "widget_id": "countdown"
+            }
+          ]
+        },
+        {
+          "id": "reset",
+          "type": "button",
+          "text": "Reset",
+          "on_press": [
+            {
+              "type": "timer_reset",
+              "widget_id": "countdown"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "title": "Finished",
+      "widgets": [
+        {
+          "id": "finished",
+          "type": "label",
+          "text": "Interval complete"
+        },
+        {
+          "id": "again",
+          "type": "button",
+          "text": "Return and reset",
+          "on_press": [
+            {
+              "type": "timer_reset",
+              "widget_id": "countdown"
+            },
+            {
+              "type": "navigate",
+              "screen_id": "home"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

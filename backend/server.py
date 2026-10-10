@@ -21,11 +21,12 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from backend.deployments import ConflictError, DeploymentStore, StoreError
+from backend.media_limits import MAX_ATTACHMENTS, MAX_TOTAL_MEDIA_BYTES, MAX_UPLOAD_BYTES
 from backend.providers import ERROR_MESSAGES, safe_diagnostics
 
 ROOT = Path(__file__).absolute().parent.parent
-MAX_UPLOAD = 12 * 1024 * 1024
-MAX_TOTAL_MEDIA = 20 * 1024 * 1024
+MAX_UPLOAD = MAX_UPLOAD_BYTES
+MAX_TOTAL_MEDIA = MAX_TOTAL_MEDIA_BYTES
 MEDIA_TYPES = {"image/jpeg", "image/png", "image/webp", "audio/wav",
                "audio/x-wav", "audio/webm", "audio/mp4", "audio/mpeg",
                "audio/ogg", "video/mp4", "video/webm", "video/quicktime"}
@@ -137,7 +138,7 @@ class Application:
         if type(value) is not dict or set(value) != {"prompt", "uploads", "request_id"}:
             raise RequestError("invalid_generation_request")
         prompt, identifiers, key = value["prompt"], value["uploads"], value["request_id"]
-        if type(prompt) is not str or len(prompt) > 6000 or type(identifiers) is not list or len(identifiers) > 3:
+        if type(prompt) is not str or len(prompt) > 6000 or type(identifiers) is not list or len(identifiers) > MAX_ATTACHMENTS:
             raise RequestError("invalid_generation_request")
         if not prompt.strip() and not identifiers:
             raise RequestError("input_required")
@@ -275,7 +276,10 @@ class Handler(BaseHTTPRequestHandler):
         if not length.isdecimal() or not 0 < int(length) <= maximum:
             raise RequestError("invalid_body_size", 413)
         self.connection.settimeout(30)
-        body = self.rfile.read(int(length))
+        try:
+            body = self.rfile.read(int(length))
+        except TimeoutError:
+            raise RequestError("upload_timeout", 408) from None
         if len(body) != int(length):
             raise RequestError("incomplete_upload")
         return body

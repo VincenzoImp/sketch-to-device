@@ -183,7 +183,7 @@ def validate_app(app):
             kind = widget.get("type")
             fields = {
                 "label": (("text",), ()),
-                "button": (("text", "on_press"), ()),
+                "button": (("text", "on_press"), ("background_color",)),
                 "counter": (("state_key",), ("text",)),
                 "toggle": (("state_key", "text"), ()),
                 "timer": (("duration_seconds", "on_complete"), ("text",)),
@@ -192,6 +192,10 @@ def validate_app(app):
                 fail("enum", widget_path, "Unsupported widget type")
             required, optional = fields[kind]
             _object(widget, ("id", "type") + required, optional, widget_path)
+            if "background_color" in widget:
+                color = widget["background_color"]
+                if type(color) is not str or not re.fullmatch(r"#[0-9A-Fa-f]{6}", color, re.ASCII):
+                    fail("color", widget_path + ".background_color", "Expected an RGB color in #RRGGBB form")
             _identifier(widget["id"], widget_path + ".id")
             if widget["id"] in widgets:
                 fail("duplicate_id", widget_path, "Widget IDs must be globally unique")

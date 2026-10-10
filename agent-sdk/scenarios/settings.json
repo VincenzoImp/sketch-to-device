@@ -1,0 +1,47 @@
+{
+  "scenario_version": 1,
+  "steps": [
+    {
+      "op": "press",
+      "widget_id": "enabled",
+      "at_ms": 0,
+      "expect": {
+        "state": {
+          "enabled": true
+        }
+      }
+    },
+    {
+      "op": "press",
+      "widget_id": "details",
+      "at_ms": 1,
+      "expect": {
+        "screen": "details",
+        "state": {
+          "enabled": true
+        }
+      }
+    },
+    {
+      "op": "press",
+      "widget_id": "same_setting",
+      "at_ms": 2,
+      "expect": {
+        "state": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "op": "press",
+      "widget_id": "back",
+      "at_ms": 3,
+      "expect": {
+        "screen": "home",
+        "state": {
+          "enabled": false
+        }
+      }
+    }
+  ]
+}

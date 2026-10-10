@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "app_id": "hello_colors",
+  "version": 1,
+  "name": "Hello Colors",
+  "target": {
+    "width": 320,
+    "height": 480,
+    "orientation": "portrait"
+  },
+  "theme": {
+    "palette": "light_blue",
+    "font_size": "medium"
+  },
+  "initial_screen": "pink",
+  "state": {},
+  "screens": [
+    {
+      "id": "pink",
+      "title": "Hello World",
+      "widgets": [
+        {
+          "id": "hello_pink",
+          "type": "button",
+          "text": "Hello World",
+          "background_color": "#FF69B4",
+          "on_press": [
+            {
+              "type": "navigate",
+              "screen_id": "blue"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "blue",
+      "title": "Hello World",
+      "widgets": [
+        {
+          "id": "hello_blue",
+          "type": "button",
+          "text": "Hello World",
+          "background_color": "#164EAD",
+          "on_press": [
+            {
+              "type": "navigate",
+              "screen_id": "green"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "green",
+      "title": "Hello World",
+      "widgets": [
+        {
+          "id": "hello_green",
+          "type": "button",
+          "text": "Hello World",
+          "background_color": "#80FF80",
+          "on_press": [
+            {
+              "type": "navigate",
+              "screen_id": "pink"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

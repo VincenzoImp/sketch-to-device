@@ -4,6 +4,10 @@ This is the implementation runbook for the one-shot creation demo. It does not r
 
 Read [session handoff](09-session-handoff.md) before resuming. Actual task/gate status and exclusive ownership are maintained in [the work ledger](12-work-ledger.md), not inferred from this schedule. [Readiness](11-readiness.md) identifies which prerequisites are resolved, tool-owned or externally blocked.
 
+## Latest scope update
+
+The user's latest request prioritizes researching and implementing real programmable apps, a consultable SDK and broader device APIs. The earlier same-day feature freeze below is historical planning, not a prohibition on this authorized work. Preserve the working device/service while using the staged [programmable platform gates](15-programmable-apps.md). A small final demo does not restrict the agent to one app category. Keep the17:00 target visible, but report unfinished integration honestly rather than equating a written design with delivery.
+
 ## Outcome
 
 On an Android phone, submit one new concept through the companion and press **Generate and install** for the paired Waveshare. Google DeepMind and Gradium perform real work. The system generates and checks an interactive app, installs it on the physical display, and reports success only after the device acknowledges the exact package. No mandatory conversation, transcript confirmation or preview approval interrupts this happy path.
@@ -89,15 +93,15 @@ The [active research workflow](14-autonomy-and-research.md) governs diagnosis an
 Two different loops are involved:
 
 - **Development loop:** implement one gate → run its acceptance checks → obtain an independent review → correct material failures → rerun the affected checks. Continue toward completion while time and dependencies allow. After two unsuccessful attempts with the same failure signature, change the diagnosis or use the documented fallback instead of repeating unchanged commands. Keep independent lanes progressing.
-- **Product generation loop:** proposed cap of an initial attempt plus two AppSpec repair attempts, inside one job deadline and token allowance. Report validator errors precisely. If still invalid, preserve the previous device app and return a clear failure. Do not silently install an unvalidated result.
+- **Product generation loop:** initial attempt plus at most two AppSpec repair attempts inside one180-second job deadline. Each managed interaction receives a best-effort50,000-token cap; this is not a hard50,000-token cap across all repairs. Report validator errors precisely. If still invalid, preserve the previous device app and return a clear failure. Do not silently install an unvalidated result.
 
-Current generation limits are a 60-second provider-request bound, 180-second total deadline, an initial attempt plus at most two validation repair attempts, and one active generation worker. A concurrent request receives `409 generation_busy`; queueing and cancellation are not implemented. Provider transport failures currently fail the attempt; automatic transport retries remain a possible improvement requiring evidence. The companion watches delivery for up to six minutes and allows resuming the same request. Measure physical delivery latency before setting a shorter acceptance target. Authentication errors and invalid inputs require correction, not blind retries.
+Current generation limits are a60-second provider-request bound,180-second total deadline, an initial attempt plus at most two validation repair attempts, and one active generation worker. A concurrent request receives `409 generation_busy`; queueing and user-facing cancellation are not implemented. Backend cleanup does attempt bounded cancellation of a still-active managed interaction and records whether it was confirmed. Provider transport failures currently fail the attempt; automatic transport retries remain a possible improvement requiring evidence. The companion watches delivery for up to six minutes and allows resuming the same request. Measure physical delivery latency before setting a shorter acceptance target. Authentication errors and invalid inputs require correction, not blind retries.
 
 The public demo target is a result within roughly 60–90 seconds, **not a measured promise**. If real generation is slower, reduce context/schema/sandbox setup and choose a truthful presentation with visible progress. A cached package is a backup, not live generation.
 
 ## Change control
 
-A proposed new feature states user value, dependencies, time cost and acceptance check. After G3, it must improve the one-shot journey or remove a blocker. Defer onboarding polish, app libraries, arbitrary code, BLE, on-device capture, voice cloning and general games engines until the core is complete.
+A proposed new feature states user value, dependencies, time cost and acceptance check. The user has reopened programmable execution, useful device APIs, agent tools and shell design as a central correction. Follow the staged feasibility gates in [programmable apps](15-programmable-apps.md), preserve the current demo, and defer costly unproved migrations. The earlier blanket deferral of app libraries, generated code and on-device capture is superseded; a feature still needs practical evidence before being advertised or deployed.
 
 Record each gate as `not_started`, `in_progress`, `passed` or `blocked`, with timestamp, evidence path and next action. “Blocked” here is a project status entry, not an instruction to stop all other work. Do not mark a gate passed from documentation alone.
 

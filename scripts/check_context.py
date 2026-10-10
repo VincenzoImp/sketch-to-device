@@ -8,6 +8,7 @@ device behavior. Secret checks cover known signatures and current local values.
 
 import argparse
 import hashlib
+import json
 import re
 import tarfile
 from pathlib import Path
@@ -17,9 +18,9 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parent.parent
 ROOT_FILES = ("README.md", "AGENTS.md", ".gitignore", ".env.example")
 SOURCE_SUFFIXES = {".md", ".json", ".py", ".sh", ".html", ".css", ".js", ".swift", ".c", ".h", ".yml", ".csv", ".lock", ".cmake", ".txt"}
-SOURCE_NAMES = {"sdkconfig.defaults", "Kconfig.projbuild"}
+SOURCE_NAMES = {"sdkconfig.defaults", "Kconfig.projbuild", ".gitignore"}
 EXCLUDED_PARTS = {"managed_components", "build", ".git", "__pycache__", ".tools", "private"}
-SOURCE_DIRS = ("contracts", "runtime", "backend", "companion", "firmware", "tests", "scripts")
+SOURCE_DIRS = ("contracts", "runtime", "backend", "companion", "firmware", "tests", "scripts", "agent-sdk")
 SECRET_PATTERNS = (
     re.compile(r"gsk_[A-Za-z0-9]{20,}"),
     re.compile(r"AIza[0-9A-Za-z_-]{30,}"),
@@ -57,6 +58,29 @@ def validate(files):
                 value = value.strip().strip("\"'")
                 if value:
                     private_values.append(value)
+    # Provisioned device/session credentials live outside .env as well.
+    config = ROOT / "firmware/sdkconfig.private"
+    if config.exists():
+        for line in config.read_text().splitlines():
+            key, separator, value = line.partition("=")
+            if separator and key in {"CONFIG_SKETCH_WIFI_SSID", "CONFIG_SKETCH_WIFI_PASSWORD", "CONFIG_SKETCH_DEVICE_TOKEN"}:
+                try:
+                    decoded = json.loads(value)
+                except ValueError:
+                    errors.append("Private device configuration could not be inspected (value omitted)")
+                    continue
+                if isinstance(decoded, str) and decoded:
+                    private_values.extend({decoded, value[1:-1]})
+    config = ROOT / "private/service/demo-config.json"
+    if config.exists():
+        try:
+            data = json.loads(config.read_text())
+            for key in ("session_token", "device_token"):
+                value = data.get(key)
+                if isinstance(value, str) and value:
+                    private_values.append(value)
+        except (ValueError, AttributeError):
+            errors.append("Private service configuration could not be inspected (value omitted)")
     for path in files:
         relative = path.relative_to(ROOT).as_posix()
         if path.is_symlink() or not path.is_file():

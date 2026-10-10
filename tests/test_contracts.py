@@ -44,6 +44,35 @@ class ValidationTests(unittest.TestCase):
             self.assertEqual(report["size_bytes"], len(raw))
             self.assertNotEqual(report["sha256"], package_report(raw + b" ")["sha256"])
 
+    def test_button_colors_strict_and_optional(self):
+        app = fixture()
+        for color in ("#000000", "#FFFFFF", "#ff69b4", "#aBcDeF"):
+            widget(app, "start")["background_color"] = color
+            self.assertEqual(widget(parse_app(encode(app)), "start")["background_color"], color)
+        for color in (None, 0, True, [], {}, "pink", "#fff", "#12345678", "#zz1234", "#123456\n", " #123456", "#１２３４５６"):
+            widget(app, "start")["background_color"] = color
+            with self.subTest(color=color):
+                self.assert_invalid(app, "color")
+        for name in ("score_live", "round_timer"):
+            app = fixture()
+            widget(app, name)["background_color"] = "#FF69B4"
+            self.assert_invalid(app, "unknown_field")
+        # Old packages keep their palette; color adds no required field.
+        self.assertNotIn("background_color", widget(parse_app(encode(fixture())), "start"))
+
+    def test_color_cycle_returns_to_pink_and_keeps_one_button(self):
+        app = fixture("hello-colors")
+        runtime = ReferenceRuntime(encode(app))
+        expected = [("pink", "#FF69B4"), ("blue", "#164EAD"), ("green", "#80FF80"), ("pink", "#FF69B4")]
+        for tick, (screen_id, color) in enumerate(expected):
+            self.assertEqual(runtime.screen, screen_id)
+            screen = next(s for s in app["screens"] if s["id"] == runtime.screen)
+            self.assertEqual(len(screen["widgets"]), 1)
+            button = screen["widgets"][0]
+            self.assertEqual((button["text"], button["background_color"]), ("Hello World", color))
+            runtime.press(button["id"], tick + 1, runtime.event_token())
+            self.assertFalse(runtime.errors)
+
     def test_byte_limit_accepts_boundary_and_rejects_next_byte(self):
         raw = encode(fixture())
         boundary = raw + b" " * (65536 - len(raw))
