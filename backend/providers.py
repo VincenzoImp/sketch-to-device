@@ -16,6 +16,9 @@ from .media_limits import MAX_AUDIO_SECONDS
 
 
 MODEL = "gemini-3.8-flash"
+MANAGED_MODELS = ("gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite")
+MANAGED_TOKEN_BUDGETS = (50000, 100000, 200000)
+MANAGED_JOB_SECONDS = (180, 600)
 # Fixed speech profiles; runtime vocabulary won the same-recording live comparison.
 STT_CONFIGS = {
     "default": {"language": "en"},
@@ -42,6 +45,7 @@ ERROR_MESSAGES = {
     "speech": "Speech recognition did not complete. Try a clear English recording.",
     "tool_protocol": "The model did not complete the required validation tools.",
     "repair_limit": "The generated app failed validation after the repair limit.",
+    "generation_stalled": "Generation repeated the same failed app. Your previous app is preserved.",
     "generation": "The app could not be generated. Try a simpler supported request.",
     "unsupported_request": "This request needs a capability the device does not support yet. Your previous app is preserved.",
     "media_dimensions": "Use a photo with smaller pixel dimensions.",
@@ -61,12 +65,14 @@ DIAGNOSTIC_REASONS = {
     "interaction_identity_changed", "interaction_not_completed", "artifact_list_invalid",
     "artifact_not_found", "artifact_path_ambiguous", "validation_failed", "execution_evidence_missing",
     "token_budget_exhausted",
+    "invalid_generation_profile", "validation_stalled",
 }
 DIAGNOSTIC_PHASES = {"create", "poll", "list_artifact", "download_artifact", "validate", "simulate", "execution"}
 INTERACTION_STATES = {"queued", "in_progress", "requires_action", "completed", "failed", "cancelled", "incomplete"}
 USAGE_FIELDS = {"total_input_tokens", "total_output_tokens", "total_thought_tokens",
                 "total_cached_tokens", "total_tool_use_tokens", "total_tokens"}
-STEP_TYPES = {"code_execution_call", "code_execution_result", "function_call", "function_result", "model_output", "other"}
+RESEARCH_STEP_TYPES = {"google_search_call", "google_search_result", "url_context_call", "url_context_result"}
+STEP_TYPES = {"code_execution_call", "code_execution_result", "function_call", "function_result", "model_output", "other"} | RESEARCH_STEP_TYPES
 
 
 def safe_diagnostics(value):
@@ -78,10 +84,12 @@ def safe_diagnostics(value):
                           ("interaction_status", INTERACTION_STATES), ("http_category", HTTP_CATEGORIES),
                           ("google_error_status", GOOGLE_ERROR_STATUSES),
                           ("google_error_reason", set(GOOGLE_ERROR_REASONS)),
+                          ("managed_model", set(MANAGED_MODELS)),
                           ("cancellation", {"not_needed", "not_attempted", "confirmed", "unconfirmed", "failed"})):
         if type(value.get(name)) is str and value[name] in allowed:
             result[name] = value[name]
-    for name in ("attempt", "elapsed_ms", "token_budget", "effective_tokens", "artifact_matches", "poll_count"):
+    for name in ("attempt", "elapsed_ms", "token_budget", "effective_tokens", "artifact_matches", "poll_count",
+                 "job_timeout_seconds", "repair_count", "stalled_failure_count"):
         if type(value.get(name)) is int and 0 <= value[name] <= 10**12:
             result[name] = value[name]
     if type(value.get("http_status")) is int and 100 <= value["http_status"] <= 599:

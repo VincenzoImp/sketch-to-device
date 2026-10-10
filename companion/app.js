@@ -12,6 +12,7 @@ function showError(message) { $('#error').textContent = message; $('#error').hid
 const errors = {
   authentication_required:'Open your private workspace link to connect.',
   generation_busy:'An app is already being built. Please wait for it to finish.',
+  generation_stalled:'The app builder repeated the same failed result. Your current app is unchanged. Try describing what should happen differently.',
   input_required:'Describe your app or add a recording.',
   unsupported_request:'This idea needs features the current app format cannot provide. Try screens with text, buttons, counters, toggles or timers.',
   unsupported_or_oversized_media:'Choose a supported image or recording up to 20 MiB.',
@@ -22,14 +23,14 @@ const errors = {
   media_conversion_unavailable:'Audio conversion is not ready on the server yet.',
   service_error:'The service could not complete this step. Please try again.',
   request_conflict:'This request changed. Submit it as a new app.',
-  provider_response:'Gemini could not finish building this app. Try a shorter, simpler description.',
-  provider_request:'Gemini could not process this request. Try a simple app with buttons, counters or timers.',
+  provider_response:'Gemini could not finish building this app. Your current app is unchanged. You can try again.',
+  provider_request:'Gemini could not process this request. Your current app is unchanged. You can try again.',
   provider_quota:'The app builder has reached its usage limit. Wait before trying again.',
   provider_auth:'The app builder needs its connection settings checked before trying again.',
   configuration:'The app builder needs its connection settings checked before trying again.',
   network:'The app builder could not be reached. Check the internet connection before trying again.',
   provider_transport:'The connection to the app builder was interrupted. Check the internet connection before trying again.',
-  deadline:'App generation took too long. Try a simpler description.',
+  deadline:'The app builder reached its time limit. Your current app is unchanged. You can try again.',
   speech:'The recording could not be understood. Try a clear, short English voice note.',
   media:'This attachment could not be read. Try another image or a short recording.',
   media_limit:'Use up to 3 files, 20 MiB each and 32 MiB total. Audio can be 60 seconds; video 30 seconds.',
@@ -43,8 +44,8 @@ const errors = {
   tool_protocol:'The app did not pass its checks. Try a simpler description.'
 };
 function failureMessage(code, reason) {
-  if (reason === 'token_budget_exhausted') return 'The app could not be finished within the build limit. Try a simpler description.';
-  return typeof errors[code] === 'string' ? errors[code] : 'The app could not be completed. Your current app is unchanged. Try a simpler request.';
+  if (reason === 'token_budget_exhausted') return 'The app builder reached its work limit. Your current app is unchanged. You can try again.';
+  return typeof errors[code] === 'string' ? errors[code] : 'The app could not be completed. Your current app is unchanged. You can try again.';
 }
 async function request(path, options = {}) {
   const response = await fetch(path, {...options, headers:{Authorization:`Bearer ${token}`, ...(options.headers || {})}});
@@ -109,10 +110,10 @@ $('#record').onclick = async () => {
   } catch (_) { if (captureStream) captureStream.getTracks().forEach(track => track.stop()); showError('Microphone access was unavailable. Add a recording or type your idea.'); }
 };
 function progress(stage, detail, deployment, diagnostics) {
-  const titles = {preparing:'Preparing your idea',uploading:'Sending your sketch',transcribing:'Listening to your idea',understanding:'Reading your sketch',generating:'Building your app',validating:'Checking every interaction',simulating:'Trying the app',ready:'On its way to your device',active:'Your idea is alive.',failed:'This attempt needs another try',superseded:'A newer idea is being built'};
+  const titles = {preparing:'Preparing your idea',uploading:'Sending your sketch',transcribing:'Listening to your idea',understanding:'Reading your sketch',generating:'Building your app',repairing:'Improving your app',validating:'Checking the app',simulating:'Trying the app',ready:'On its way to your device',active:'Your idea is alive.',failed:'This attempt needs another try',superseded:'A newer idea is being built'};
   $('#progress').hidden = false; $('#progress-title').textContent = titles[stage] || 'Working on your app';
   $('#progress-detail').textContent = stage === 'failed' ? failureMessage(detail, diagnostics?.reason) : detail || ''; $('#progress-label').textContent = stage === 'active' ? 'RUNNING ON YOUR DEVICE' : 'MAKING YOUR APP';
-  const phase = ['ready','active'].includes(stage) ? 2 : ['generating','validating','simulating'].includes(stage) ? 1 : 0;
+  const phase = ['ready','active'].includes(stage) ? 2 : ['generating','repairing','validating','simulating'].includes(stage) ? 1 : 0;
   [...$('#steps').children].forEach((step, index) => { step.classList.toggle('done', index < phase || stage === 'active'); step.classList.toggle('current', index === phase && stage !== 'active'); });
   $('#identity').textContent = deployment ? `${deployment.manifest.app_id} · v${deployment.manifest.version} · ${deployment.manifest.sha256.slice(0,12)}` : '';
 }
@@ -166,14 +167,18 @@ $('#create-form').addEventListener('submit', async event => {
   finally { setWorking(false); }
 });
 async function watch(identifier) {
-  const deadline = Date.now() + 6 * 60 * 1000;
+  const deadline = Date.now() + 15 * 60 * 1000;
+  let awaitingDevice = false;
   while (Date.now() < deadline) {
     const job = await request(`/api/jobs/${encodeURIComponent(identifier)}`);
+    awaitingDevice = job.stage === 'ready';
     progress(job.stage, job.detail, job.deployment, job.diagnostics); updateDevice(job.device_online);
     if (['active','failed','superseded'].includes(job.stage)) { sessionStorage.removeItem('last-job'); return; }
     await pause(1500);
   }
-  showError('Still waiting for the device. Your previous app is preserved. Check its connection before trying again.');
+  showError(awaitingDevice
+    ? 'Your app is waiting for the device. Check its connection, then tap Resume request to see its status.'
+    : 'This request is still in progress. Tap Resume request to reconnect to it.');
 }
 connect();
 setInterval(async () => { if (token && !working) { try { updateDevice((await request('/api/session')).device_online); } catch (_) {} } }, 5000);

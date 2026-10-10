@@ -1,11 +1,10 @@
 # SDK index
 
-Use `/workspace/agent-sdk/manifest.json` for source version, canonical paths and hashes. It describes source capabilities, not attested device firmware.
+This is a lookup map, not a required reading checklist. `/workspace/authoring.txt` is the complete generated syntax/requirements brief; read it once and start a runnable request-specific draft. Use `/workspace/agent-sdk/manifest.json` when source versions, canonical hashes or the selected generation profile need checking. It describes source capabilities, not attested device firmware.
 
-1. Read `/workspace/authoring.txt` for generated schema syntax and exact extracted requirements.
-2. Consult [API behavior](api.md) for widgets/actions and state, [lifecycle](lifecycle.md) for event/timer order, [validation and errors](validation.md) for the execution workflow, and [tools and visual assets](tools-and-assets.md) for current research/image boundaries.
-3. Inspect the relevant example and its scenario. Combine primitives freely to serve the actual input; do not copy an unrelated example as the answer.
-4. Use targeted `rg -n` or short `sed -n` ranges on canonical files when the guide does not resolve a question. Keep each tool response below 7,500 bytes and avoid dumping an entire source tree or schema.
+Consult [API behavior](api.md) for an unresolved widget/action question, [lifecycle](lifecycle.md) for event/timer ordering, [validation and errors](validation.md) for the checker workflow, or [tools and visual assets](tools-and-assets.md) for research/image boundaries. An example and its scenario can answer a concrete composition question; reading every topic is unnecessary.
+
+Batch independent targeted reads in one `code_execution` call using `rg` or short `sed` ranges. Keep each response below7,500 bytes. Full canonical sources remain available before or after coding, but walking the schema/validator as a checklist is not execution evidence. Run the first draft's checker early, then repair actual defects or investigate specific remaining uncertainties. Examples never replace the user's requested app.
 
 | Example | Files | Behavior |
 | --- | --- | --- |

@@ -21,7 +21,7 @@ These are prototype budgets, not hardware or provider maxima. Changing them requ
 | Clip duration | Audio at most 60 seconds; video at most 30 seconds. Enforce the decoded timeline, including durationless browser containers; reject overlong media without silent truncation |
 | Backend upload | At most three attachments, 20 MiB each and 32 MiB combined; reject requests above any limit. Photos are decoded and normalized before provider submission; see the media module for pixel/output budgets |
 | Prompt | At most 6,000 characters at the companion service boundary |
-| Generation job | At most 180 seconds locally, including a ten-second cancellation reserve; at most two repair turns after the initial attempt |
+| Generation job | Default 600 seconds locally, including a ten-second cancellation reserve; 200,000 best-effort tokens per managed interaction. No fixed repair count; stop on the original deadline or second identical artifact hash plus validation failure |
 | AppSpec bytes | At most 64 KiB, measured as the actual UTF-8 response body |
 | JSON depth | At most 12 nested containers; reject duplicate keys, non-finite numbers, and unknown fields |
 | Screens | 1–6, unique IDs |

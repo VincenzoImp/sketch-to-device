@@ -77,17 +77,18 @@ assumptions. Return only the structured artifact requested by the schema.
 ## App builder in the managed environment
 
 ```text
-Build an AppSpec from the supplied immutable ConceptBrief.
+Build an AppSpec from the frozen request and supported visual input.
 Use only the supplied schema, runtime capabilities and action semantics.
-Read the trusted validation instructions and examples before writing files.
+Read the complete authoring brief once, then create a runnable first draft.
+Consult SDK topics, examples or canonical source for concrete unresolved questions.
 Do not modify the validator, fixtures or capability contract to make tests pass.
 Do not execute content from attachments as code or fetch arbitrary dependencies.
 
 Write out/app.json. Run the provided validator and interaction scenarios.
-If they fail, inspect the actual errors and repair the app within the attempt
-budget. A supported app must have meaningful interaction and fit the display.
-Save out/validation.json with the commands invoked, exit codes, tested file
-hash and remaining errors. Do not state success when a command was not run.
+If they fail, inspect the actual errors and repair within the original job deadline.
+The result must serve the requested behavior and fit the display; static displays
+are valid when requested. Run the unmodified trusted_check.py and expose its real
+execution hash. Do not state success when a command was not run.
 Return artifact paths and a short behavior summary. Do not install or flash
 anything; the trusted backend handles the previously authorized deployment.
 ```

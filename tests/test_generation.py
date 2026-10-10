@@ -81,11 +81,11 @@ class GenerationTests(unittest.TestCase):
         self.timing_record = self.timing_patch.start()
         self.addCleanup(self.timing_patch.stop)
 
-    def generate(self, client, prompt="Create a ten-second tap game", media=None):
+    def generate(self, client, prompt="Create a ten-second tap game", media=None, **profile):
         progress = []
         with patch.object(generator, "ProviderClient", return_value=client), patch.object(generator, "_record_terminal"), \
                 patch.object(generator, "normalize_photo", return_value=NORMALIZED_PHOTO):
-            result = generator.generate_app(prompt, media or [], lambda stage, detail: progress.append((stage, detail)))
+            result = generator.generate_app(prompt, media or [], lambda stage, detail: progress.append((stage, detail)), **profile)
         return result, progress
 
     def test_completed_requires_download_exact_hash_and_trusted_behavior(self):
@@ -95,7 +95,7 @@ class GenerationTests(unittest.TestCase):
         self.assertEqual(progress[-1][0], "ready")
         payload = client.payloads[0]
         self.assertEqual(payload["agent"], generator.AGENT)
-        self.assertEqual(payload["agent_config"]["max_total_tokens"], 50000)
+        self.assertEqual(payload["agent_config"], {"type": "antigravity", "model": "gemini-3.8-flash", "max_total_tokens": 200000})
         self.assertEqual(payload["environment"]["network"], "disabled")
         self.assertEqual(payload["tools"], [{"type": "code_execution"},
                                             {"type": "google_search"}, {"type": "url_context"}])
@@ -118,6 +118,52 @@ class GenerationTests(unittest.TestCase):
         self.assertEqual(client.payloads[1]["previous_interaction_id"], "interaction_1")
         self.assertIn("repairing", [stage for stage, _ in progress])
 
+    def test_explicit_profiles_remain_fixed_across_payload_mount_timing_and_repair(self):
+        invalid = json.loads(RAW)
+        invalid["version"] = 2
+        invalid = json.dumps(invalid).encode()
+        for model in providers.MANAGED_MODELS:
+            for budget in providers.MANAGED_TOKEN_BUDGETS:
+                with self.subTest(model=model, budget=budget):
+                    client = FakeClient([completed(invalid), completed(index=2)], [invalid, RAW])
+                    report = {}
+                    raw, _ = self.generate(client, model=model, token_budget=budget, job_seconds=180, report=report)
+                    self.assertEqual(raw, RAW)
+                    self.assertEqual(len(client.payloads), 2)
+                    for payload in client.payloads:
+                        self.assertEqual(payload["agent_config"], {"type": "antigravity", "model": model,
+                                                                 "max_total_tokens": budget})
+                    manifest = next(source["content"] for source in client.payloads[0]["environment"]["sources"]
+                                    if source["target"].endswith("/manifest.json"))
+                    self.assertEqual(json.loads(manifest)["generation_profile"], {"model": model, "token_budget": budget, "job_seconds": 180})
+                    self.assertEqual(report["profile"], {"model": model, "token_budget": budget, "job_seconds": 180})
+                    self.assertEqual(report["timing"]["diagnostics"]["managed_model"], model)
+                    self.assertEqual(report["timing"]["diagnostics"]["token_budget"], budget)
+                    self.assertEqual(report["timing"]["diagnostics"]["attempt"], 2)
+                    self.assertEqual(report["timing"]["compile_ms"], 0)
+                    self.assertEqual(self.timing_record.call_args.args[0]["profile"], report["profile"])
+                    self.assertEqual(self.timing_record.call_args.args[0]["job_timeout_seconds"], 180)
+
+    def test_invalid_profiles_fail_before_credentials_or_job_creation(self):
+        for profile in ({"model": "PRIVATE"}, {"model": None}, {"token_budget": True},
+                        {"token_budget": "100000"}, {"token_budget": 32768}, {"token_budget": 200001},
+                        {"job_seconds": True}, {"job_seconds": "600"}, {"job_seconds": 601}):
+            with self.subTest(profile=profile), patch.object(generator, "ProviderClient") as client, \
+                    self.assertRaises(generator.GenerationError) as caught:
+                generator.generate_app("public", [], lambda *args: None, **profile)
+            client.assert_not_called()
+            self.assertEqual(caught.exception.diagnostics, {"reason": "invalid_generation_profile"})
+            self.assertNotIn("PRIVATE", str(caught.exception))
+        self.timing_record.assert_not_called()
+        for args in (["--live", "--model", "PRIVATE"], ["--live", "--token-budget", "PRIVATE"],
+                     ["--live", "--job-seconds", "PRIVATE"]):
+            with patch.object(generator, "ProviderClient") as client, contextlib.redirect_stderr(io.StringIO()) as error, \
+                    self.assertRaises(SystemExit) as caught:
+                generator.main(args)
+            self.assertEqual(caught.exception.code, 2)
+            self.assertNotIn("PRIVATE", error.getvalue())
+            client.assert_not_called()
+
     def test_final_prose_and_wrong_hash_never_replace_execution_evidence(self):
         for kind in ("prose", "wrong_hash", "wrong_call"):
             response = completed(trace=kind != "prose")
@@ -129,8 +175,9 @@ class GenerationTests(unittest.TestCase):
             client = FakeClient([response] * 3, [RAW] * 3)
             with self.subTest(kind=kind), self.assertRaises(generator.GenerationError) as caught:
                 self.generate(client)
-            self.assertEqual(caught.exception.code, "repair_limit")
-            self.assertEqual(len(client.payloads), 3)
+            self.assertEqual(caught.exception.code, "generation_stalled")
+            self.assertEqual(caught.exception.diagnostics["reason"], "validation_stalled")
+            self.assertEqual(len(client.payloads), 2)
 
     def test_real_runtime_rejects_wrong_score_despite_successful_remote_marker(self):
         app = json.loads(RAW)
@@ -140,7 +187,61 @@ class GenerationTests(unittest.TestCase):
         client = FakeClient([completed(raw)] * 3, [raw] * 3)
         with self.assertRaises(generator.GenerationError) as caught:
             self.generate(client)
-        self.assertEqual(caught.exception.code, "repair_limit")
+        self.assertEqual(caught.exception.code, "generation_stalled")
+
+    def test_changed_invalid_artifacts_can_repair_four_times_without_round_ceiling(self):
+        artifacts = []
+        for version in (2, 3, 4, 5):
+            app = json.loads(RAW)
+            app["version"] = version
+            artifacts.append(json.dumps(app).encode())
+        artifacts.append(RAW)
+        client = FakeClient([completed(raw, index=index + 1) for index, raw in enumerate(artifacts)], artifacts)
+        report = {}
+        raw, progress = self.generate(client, report=report)
+        self.assertEqual(raw, RAW)
+        self.assertEqual(len(client.payloads), 5)
+        self.assertEqual([stage for stage, _ in progress].count("repairing"), 4)
+        self.assertEqual(report["timing"]["diagnostics"]["repair_count"], 4)
+        self.assertEqual(report["timing"]["diagnostics"]["attempt"], 5)
+        self.assertEqual(report["profile"]["job_seconds"], 600)
+        for index in range(1, 5):
+            self.assertEqual(client.payloads[index]["previous_interaction_id"], "interaction_" + str(index))
+
+    def test_repeated_artifact_failure_stalls_even_after_a_different_invalid_artifact(self):
+        a = json.loads(RAW); a["version"] = 2
+        b = json.loads(RAW); b["version"] = 3
+        artifacts = [json.dumps(a).encode(), json.dumps(b).encode(), json.dumps(a).encode()]
+        client = FakeClient([completed(raw, index=index + 1) for index, raw in enumerate(artifacts)], artifacts)
+        with self.assertRaises(generator.GenerationError) as caught:
+            self.generate(client)
+        self.assertEqual(caught.exception.code, "generation_stalled")
+        self.assertEqual(caught.exception.diagnostics["stalled_failure_count"], 2)
+        self.assertEqual(caught.exception.diagnostics["attempt"], 3)
+        self.assertEqual(len(client.payloads), 3)
+
+    def test_original_job_deadline_stops_polling_and_reserves_cancellation_time(self):
+        for seconds in (180, 600):
+            now = [100.0]
+            response = {"id": "interaction_1", "status": "in_progress"}
+            client = FakeClient([response])
+            original = client.google
+            deadlines = []
+            def google(method, path, **kwargs):
+                deadlines.append(client.deadline)
+                if path.endswith("/cancel"):
+                    return original(method, path, **kwargs)
+                now[0] = 100.0 + seconds - 10
+                return response
+            client.google = google
+            with self.subTest(seconds=seconds), patch.object(generator.time, "monotonic", side_effect=lambda: now[0]), \
+                    patch.object(generator.time, "sleep"), self.assertRaises(generator.GenerationError) as caught:
+                self.generate(client, job_seconds=seconds)
+            self.assertEqual(caught.exception.code, "deadline")
+            self.assertEqual(deadlines, [100 + seconds - 10, 100 + seconds])
+            self.assertEqual(caught.exception.diagnostics["cancellation"], "confirmed")
+            self.assertEqual(caught.exception.diagnostics["elapsed_ms"], (seconds - 10) * 1000)
+            self.assertEqual(len(client.payloads), 1)
 
     def test_search_steps_never_replace_paired_checker_execution(self):
         response = completed()
@@ -179,7 +280,7 @@ class GenerationTests(unittest.TestCase):
         self.assertEqual(diagnostic["usage"]["total_tokens"], 33000)
         self.assertEqual(diagnostic["step_counts"]["code_execution_call"], 1)
         self.assertEqual(diagnostic["attempt"], 1)
-        self.assertEqual(diagnostic["token_budget"], 50000)
+        self.assertEqual(diagnostic["token_budget"], 200000)
         self.assertNotIn("PRIVATE", json.dumps(diagnostic))
 
     def test_incomplete_download_requires_actual_checker_hash_and_keeps_terminal_status(self):
@@ -247,11 +348,11 @@ class GenerationTests(unittest.TestCase):
 
     def test_budget_reason_uses_validated_noncached_usage_and_actual_request_cap(self):
         response = {"id": "interaction_1", "status": "incomplete",
-                    "usage": {"total_tokens": 137641, "total_cached_tokens": 103693}, "steps": []}
-        # Reproduce the observed replay against its historical cap, not today's changed cap.
-        with patch.object(generator, "TOKEN_BUDGET", 32768), self.assertRaises(generator.GenerationError) as caught:
-            self.generate(FakeClient([response]))
-        self.assertEqual(caught.exception.diagnostics["effective_tokens"], 33948)
+                    "usage": {"total_tokens": 382949, "total_cached_tokens": 332474}, "steps": []}
+        # Reproduce the observed SDK run against its explicit historical cap.
+        with self.assertRaises(generator.GenerationError) as caught:
+            self.generate(FakeClient([response]), token_budget=50000)
+        self.assertEqual(caught.exception.diagnostics["effective_tokens"], 50475)
         self.assertEqual(caught.exception.diagnostics["reason"], "token_budget_exhausted")
         with self.assertRaises(generator.GenerationError) as caught:
             self.generate(FakeClient([response]))
@@ -292,7 +393,7 @@ class GenerationTests(unittest.TestCase):
             read = subprocess.run(["/bin/bash", "-c", generator.READ_COMMAND.replace("/workspace/", str(workspace) + "/")],
                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
             self.assertEqual(read.returncode, 0)
-            self.assertEqual(read.stdout, (ROOT / "agent-sdk/INDEX.md").read_bytes())
+            self.assertEqual(read.stdout, authoring.encode())
             command = generator.WRITE_COMMAND.replace("/workspace/", str(workspace) + "/")
             command = command.replace("python3 ", shlex.quote(sys.executable) + " -B ")
             environment = {"PATH": "/usr/bin:/bin", "defs": "WRONG_SHELL_EXPANSION"}
@@ -378,6 +479,62 @@ class GenerationTests(unittest.TestCase):
             self.assertLess(path.stat().st_size, generator.MAX_TERMINAL_TRACE)
             self.assertEqual(json.loads(path.read_text())["trace_omitted"], "size_limit")
             self.assertNotIn("PRIVATE_TRANSCRIPT", path.read_text())
+
+    def test_research_trace_retains_documented_steps_and_counts_without_thoughts(self):
+        response = completed()
+        research = [
+            {"type": "google_search_call", "id": "s", "arguments": {"queries": ["public colors"]}},
+            {"type": "google_search_result", "call_id": "s", "is_error": False, "result": [{"title": "Public"}]},
+            {"type": "url_context_call", "id": "u", "arguments": {"urls": ["https://example.com"]}},
+            {"type": "url_context_result", "call_id": "u", "is_error": True,
+             "result": [{"url": "https://example.com", "status": "error"}]},
+            {"type": "PRIVATE_UNKNOWN_TYPE", "text": "PRIVATE_UNKNOWN_BODY"},
+            {"type": "model_thought", "text": "PRIVATE_THOUGHT"},
+        ]
+        response["steps"] += research
+        with tempfile.TemporaryDirectory() as temporary, patch.object(generator, "ROOT", Path(temporary)):
+            profile = {"model": "gemini-3.5-flash-lite", "token_budget": 100000, "job_seconds": 600}
+            self.assertTrue(generator._record_terminal(response, [], {}, 1, profile))
+            path = Path(temporary) / "private/provider/managed-last-execution.json"
+            record = json.loads(path.read_bytes())
+            self.assertEqual(record["profile"], profile)
+            self.assertEqual(record["token_budget"], 100000)
+            self.assertEqual(record["steps"][2:], research[:4])
+            self.assertEqual(record["diagnostics"]["step_counts"]["other"], 2)
+            for name in providers.RESEARCH_STEP_TYPES:
+                self.assertEqual(record["diagnostics"]["step_counts"][name], 1)
+            self.assertNotIn("PRIVATE", path.read_text())
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+
+    def test_per_call_run_id_correlates_terminal_and_timing_despite_last_file_overwrite(self):
+        sources = generator._sources({"tap_game": True, "duration_seconds": 10})
+        reports = []
+        with tempfile.TemporaryDirectory() as temporary, patch.object(generator, "ROOT", Path(temporary)), \
+                patch.object(generator, "_sources", return_value=sources), \
+                patch.object(generator, "_record_timing", side_effect=self.real_record_timing):
+            for status in ("completed", "incomplete"):
+                response = completed(); response["status"] = status
+                report = {}
+                with patch.object(generator, "ProviderClient", return_value=FakeClient([response])):
+                    self.assertEqual(generator.generate_app("ten-second tap game", [], lambda *args: None, report=report), RAW)
+                directory = Path(temporary) / "private/provider"
+                trace = json.loads((directory / "managed-last-execution.json").read_bytes())
+                timing = json.loads((directory / "managed-last-timing.json").read_bytes())
+                run_id = report["timing"]["run_id"]
+                self.assertRegex(run_id, r"^[a-f0-9]{32}$")
+                self.assertEqual(trace["run_id"], run_id)
+                self.assertEqual(timing["run_id"], run_id)
+                self.assertEqual(trace["diagnostics"]["interaction_status"], status)
+                reports.append(report)
+            self.assertNotEqual(reports[0]["timing"]["run_id"], reports[1]["timing"]["run_id"])
+            self.assertNotEqual(trace["run_id"], reports[0]["timing"]["run_id"])
+            response["steps"][1]["result"] = "x" * (generator.MAX_TERMINAL_TRACE + 1)
+            self.assertTrue(generator._record_terminal(response, [], {}, 1, run_id=reports[-1]["timing"]["run_id"]))
+            trimmed = json.loads((directory / "managed-last-execution.json").read_bytes())
+            self.assertEqual(trimmed["run_id"], reports[-1]["timing"]["run_id"])
+            self.assertEqual(trimmed["trace_omitted"], "size_limit")
+            self.assertFalse(generator._record_terminal(response, [], {}, 1, run_id="PRIVATE"))
+            self.assertEqual(json.loads((directory / "managed-last-execution.json").read_bytes()), trimmed)
 
     def test_missing_artifact_is_distinguished_from_terminal_incomplete(self):
         client = FakeClient()
@@ -509,6 +666,8 @@ class GenerationTests(unittest.TestCase):
         self.assertEqual(report["compile_ms"],0)
         self.assertEqual(report["source_sha256"],hashlib.sha256(RAW).hexdigest())
         self.assertEqual(report["run_id"],initial["run_id"])
+        self.assertEqual(report["profile"], {"model": "gemini-3.8-flash", "token_budget": 200000, "job_seconds": 600})
+        self.assertEqual(timing.summary()["total_ms"], 69500)
         with tempfile.TemporaryDirectory() as temporary,patch.object(generator,"ROOT",Path(temporary)):
             self.real_record_timing(report)
             path=Path(temporary)/"private/provider/managed-last-timing.json"
@@ -587,7 +746,7 @@ class GenerationTests(unittest.TestCase):
             else:response["steps"][1]["call_id"]="other"
             client=FakeClient([response]*3,[raw]*3)
             with self.subTest(kind=kind),self.assertRaises(generator.GenerationError) as caught:self.generate(client,"Use the device camera")
-            self.assertEqual(caught.exception.code,"repair_limit")
+            self.assertEqual(caught.exception.code,"generation_stalled")
         for features in ([],["PRIVATE"],["camera_capture"]*2,[{}]):
             with self.assertRaises(ValueError):generator.unsupported_features(json.dumps({"kind":"unsupported_request","features":features}).encode())
 
@@ -732,8 +891,31 @@ class GenerationTests(unittest.TestCase):
             report = json.loads((Path(temporary) / "artifacts/generation-last-result.json").read_text())
             self.assertEqual(artifact.read_bytes(), RAW)
             self.assertEqual(report, json.loads(output.getvalue()))
-            self.assertEqual(set(report), {"result", "sha256", "size_bytes", "artifact", "device_installed", "observed_at_utc"})
+            self.assertEqual(set(report), {"result", "sha256", "size_bytes", "artifact", "device_installed", "observed_at_utc", "profile"})
             self.assertFalse(report["device_installed"])
+
+    def test_cli_profile_and_phase_report_belong_to_this_call_on_success_and_failure(self):
+        sources = generator._sources({"tap_game": True, "duration_seconds": 10})
+        for fails in (False, True):
+            response = {"id": "interaction_1", "status": "failed"} if fails else completed()
+            client = FakeClient([response])
+            with self.subTest(fails=fails), tempfile.TemporaryDirectory() as temporary, \
+                    patch.object(generator, "ROOT", Path(temporary)), patch.object(generator, "_sources", return_value=sources), \
+                    patch.object(generator, "ProviderClient", return_value=client), patch.object(generator, "_record_terminal"), \
+                    contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(generator.main(["--live", "--model", "gemini-3.5-flash-lite", "--token-budget", "100000", "--job-seconds", "180"]), int(fails))
+                report = json.loads(output.getvalue().splitlines()[-1])
+                self.assertEqual(report["profile"], {"model": "gemini-3.5-flash-lite", "token_budget": 100000, "job_seconds": 180})
+                self.assertEqual(report["timing"]["status"], "failed" if fails else "completed")
+                self.assertEqual(set(report["timing"]["phase_ms"]), generator.TIMING_PHASES)
+                self.assertEqual(report["timing"]["compile_ms"], 0)
+                self.assertEqual(report["timing"]["diagnostics"]["interaction_status"], "failed" if fails else "completed")
+                self.assertEqual(report, json.loads((Path(temporary) / "artifacts/generation-last-result.json").read_bytes()))
+                self.assertNotIn("interaction_1", json.dumps(report))
+                if not fails:
+                    self.assertEqual((Path(temporary) / "artifacts/generated-app.json").read_bytes(), RAW)
+                else:
+                    self.assertFalse((Path(temporary) / "artifacts/generated-app.json").exists())
 
 
 class ProviderTests(unittest.TestCase):
