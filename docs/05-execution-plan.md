@@ -1,6 +1,6 @@
 # Controlled implementation pipeline
 
-**Current direction:** the user requests a full input-to-agent-to-device redesign plan, with Gemini authoring application-specific source from the user's prompt/image. [The revised release plan](16-final-platform-plan.md) owns that work and the future programmable gates. Implementation/live probes are held during this planning deliverable. The gates below remain legacy AppSpec criteria, not a definition of the new platform.
+**Current direction:** the user activated implementation of the full input-to-agent-to-device redesign, with Gemini authoring application-specific source from the user's prompt/image. [The revised release plan](16-final-platform-plan.md) owns that work and the future programmable gates. Implementation and practical probes resume under D30; current ownership is in the ledger. The gates below remain legacy AppSpec criteria, not a definition of the new platform.
 
 This is the implementation runbook for the one-shot creation demo. It does not record completed implementation. Implementation is now authorized; read current gate evidence and user steering before selecting the next task. All project artifacts, interfaces, prompts, identifiers, comments and demo material are in English.
 

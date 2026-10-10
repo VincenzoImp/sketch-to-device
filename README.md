@@ -2,7 +2,7 @@
 
 Operating context for the Agentic AI Hack Zürich on October 10, 2026. Turn a short description or a narrated sketch into an interactive app on a Waveshare ESP32-P4 device. Working project name.
 
-**Current phase: redesign the complete input-to-generated-program-to-device pipeline.** The user will supply the prompt and image; Gemini must author the app, without prepared game templates or coordinator-written substitutes. [The revised platform plan](docs/16-final-platform-plan.md) defines the rewrite, SDK, Google AI Studio/Pi assessment and staged proofs. Feature changes and live probes are held during planning/review. Production remains AppSpec0.2: voice, photo-only and Hello Colors worked physically; Flappy Bird exposed its limitations. A plan or compiled probe is not a deployed capability.
+**Current phase: implement the reviewed programmable generation platform.** The user will supply the prompt and image; Gemini must author the app, without prepared game templates or coordinator-written substitutes. [The revised platform plan](docs/16-final-platform-plan.md) defines the rewrite, SDK, Google AI Studio/Pi assessment and staged proofs. The user has activated implementation of that plan (D30); new capabilities require their own practical proofs. Production remains AppSpec0.2: voice, photo-only and Hello Colors worked physically; Flappy Bird exposed its limitations. A plan or compiled probe is not a deployed capability.
 
 ## Primary experience
 
@@ -33,6 +33,8 @@ Every deliverable follows [independent review and practical verification](docs/1
 Research: [hardware](docs/research/hardware.md), [Gemini](docs/research/gemini.md), and [partners](docs/research/partners.md). [AGENTS.md](AGENTS.md) governs subsequent work.
 
 The [versioned agent SDK](agent-sdk/README.md) packages consultable API references, managed-agent instructions/skills and runnable examples for the currently implemented runtime. The [platform exploration](docs/15-programmable-apps.md) records alternatives/probes; the [release plan](docs/16-final-platform-plan.md) reconciles the audit and defines the shared capability and acceptance gates.
+
+The new [programmable SDK](agent-sdk/program-v1/README.md) and [shared native core](firmware/program_core/README.md) are separate implementation candidates. Their source and host checks do not advertise availability on the currently installed device.
 
 ## Setup on the tested Mac and board
 
@@ -91,6 +93,6 @@ The selected partners are **Google DeepMind and Gradium**. Entire is optional an
 
 **Deadlines:** public competition opt-in at 19:00; the user's ready-by target at 17:00; live demos at 20:00, all Europe/Zurich. See [event details](docs/01-event.md).
 
-The verified public checkpoint preceding this redesign revision is [d223469](https://github.com/VincenzoImp/sketch-to-device/commit/d223469e89f2fca6057ff97c01598fa02ede3c53), containing158 reviewed files and preserving earlier commits. The coordinator published it directly after full access became available and matched all committed file hashes and remote main. This revised plan needs its own reviewed checkpoint; source publication does not update the running service or device. Use [checkpoint_github.py](scripts/checkpoint_github.py) for authorized follow-up commits: it audits the public tree, pushes without force and verifies the remote. Original PDFs, `.env`, private media and credentials remain excluded. The initial100-file export hash belongs only to its historical snapshot, recorded in the ledger.
+The verified public checkpoint preceding this redesign revision is [d223469](https://github.com/VincenzoImp/sketch-to-device/commit/d223469e89f2fca6057ff97c01598fa02ede3c53), containing158 reviewed files and preserving earlier commits. The coordinator published it directly after full access became available and matched all committed file hashes and remote main. The redesign plan was subsequently published and verified at5a183fd; source publication does not update the running service or device. Use [checkpoint_github.py](scripts/checkpoint_github.py) for authorized follow-up commits: it audits the public tree, pushes without force and verifies the remote. Original PDFs, `.env`, private media and credentials remain excluded. The initial100-file export hash belongs only to its historical snapshot, recorded in the ledger.
 
 To check the public context and current source allowlist, run `python3 scripts/check_context.py --export`. This validates local document links and scans known credential signatures/configured secret values; it does not test the app or prove GitHub publication. The snapshot is written to ignored `artifacts/context-public.tar.gz`. Unlisted future source types and Git history need separate review before publication.

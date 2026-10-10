@@ -59,3 +59,9 @@ On 10 October 2026, Python 3.9.6 ran all 33 acceptance tests successfully. Both 
 ## Runtime 0.2.0 extension
 
 Optional button `background_color` accepts exact `#RRGGBB`. The host and device validate the same syntax, and the device selects contrasting black/white text. [Hello Colors](fixtures/hello-colors.json) demonstrates a three-screen finite color cycle using existing navigation. Old packages retain theme colors; no storage migration is required. Native checks are in `firmware/tests/check_colors.py`. Host and native checks do not establish physical color rendering; the updated firmware must be flashed and observed.
+
+## Programmable extension
+
+The separately versioned [programmable contract](programmable.md) defines the
+schema2 implementation target. It does not change the deployed schema1 runtime
+or establish device support until the implementation gates pass.

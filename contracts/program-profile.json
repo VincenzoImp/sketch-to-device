@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "runtime_version": "0.3.0",
+  "engine": "quickjs-ng-0.14.0",
+  "sdk": "device-js-1",
+  "profile": "p4-canvas-1",
+  "viewport": {
+    "width": 320,
+    "height": 432
+  },
+  "modules": [
+    "canvas",
+    "input",
+    "time"
+  ],
+  "limits": {
+    "package_bytes": 65536,
+    "source_bytes": 65536,
+    "json_depth": 12,
+    "asset_count": 32,
+    "decoded_asset_bytes": 49152,
+    "js_heap_bytes": 262144,
+    "allocator_payload_bytes": 524288,
+    "js_stack_bytes": 32768,
+    "callback_ms": 50,
+    "microtasks_per_callback": 64,
+    "scenario_events": 4096,
+    "scenario_bytes": 524288,
+    "scenario_duration_ms": 120000,
+    "scenario_frames": 16,
+    "draw_commands": 128,
+    "text_utf8_bytes": 256,
+    "total_text_utf8_bytes": 4096,
+    "pixel_work": 552960
+  },
+  "asset_format": "rgba8888",
+  "deployed": false,
+  "physical_qualification": "pending"
+}

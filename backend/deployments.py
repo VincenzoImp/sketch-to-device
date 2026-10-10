@@ -12,7 +12,8 @@ import sqlite3
 import uuid
 from contextlib import contextmanager
 
-from runtime.validation import CAPABILITIES, ValidationError, decode_json, package_report
+from runtime.validation import CAPABILITIES, ValidationError, decode_json
+from runtime.packages import package_report
 
 
 class StoreError(ValueError):
@@ -103,6 +104,14 @@ class DeploymentStore:
                 status TEXT NOT NULL,
                 error_code TEXT NOT NULL,
                 UNIQUE(deployment_id, status, error_code)
+            );
+            CREATE TABLE IF NOT EXISTS program_versions (
+                session_id TEXT NOT NULL,
+                app_id TEXT NOT NULL,
+                intent_id TEXT NOT NULL REFERENCES intents(intent_id),
+                version INTEGER NOT NULL,
+                PRIMARY KEY(session_id, app_id, intent_id),
+                UNIQUE(session_id, app_id, version)
             );
         """)
 
@@ -236,10 +245,22 @@ class DeploymentStore:
             self._db.execute("UPDATE intents SET status='failed',error_code=? WHERE intent_id=?",
                              (error_code, intent_id))
 
+    def _next_version(self, session_id, app_id):
+        # Legacy and programmable publishers share this namespace, including
+        # candidates whose bytes were frozen before execution and publication.
+        return self._db.execute("""
+            SELECT COALESCE(MAX(version),0)+1 FROM (
+                SELECT version FROM deployments WHERE session_id=? AND app_id=?
+                UNION ALL
+                SELECT version FROM program_versions WHERE session_id=? AND app_id=?
+            )
+        """, (session_id, app_id, session_id, app_id)).fetchone()[0]
+
     def publish(self, session_id, intent_id, artifact):
         """Assign version, validate exact final bytes, and publish only current intent."""
         app = decode_json(artifact)
-        if type(app) is not dict or type(app.get("app_id")) is not str:
+        if (type(app) is not dict or type(app.get("app_id")) is not str
+                or type(app.get("schema_version")) is not int or app["schema_version"] != 1):
             raise StoreError("Artifact must be an AppSpec object")
         source_hash = _digest(artifact)
         with self._transaction():
@@ -252,8 +273,7 @@ class DeploymentStore:
                 if previous["source_sha256"] != source_hash:
                     raise ConflictError("Intent was already published from a different artifact")
                 return self._envelope(self._checked_deployment(previous["deployment_id"]))
-            version = self._db.execute("SELECT COALESCE(MAX(version),0)+1 FROM deployments WHERE session_id=? AND app_id=?",
-                                       (session_id, app["app_id"])).fetchone()[0]
+            version = self._next_version(session_id, app["app_id"])
             app["version"] = version
             body = json.dumps(app, ensure_ascii=True, allow_nan=False, sort_keys=True,
                               separators=(",", ":")).encode("utf-8")

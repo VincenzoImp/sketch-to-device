@@ -1,6 +1,6 @@
 # Programmable platform audit and release plan
 
-Audit and revised plan: 10 October 2026. **Current deliverable: reassess the entire input → agent → program/assets → device pipeline for general app programming.** The user clarified that they will supply the prompt and image and the product's Gemini agent must author the application. A coordinator-written whack-a-mole, canned template, or six-app whitelist would not meet that request. Feature changes, live provider jobs and physical probes are held during this planning deliverable. This document owns the redesign; earlier [platform exploration](15-programmable-apps.md) preserves research/probe history. Planning a release is not evidence that its capabilities exist.
+Audit and revised plan: 10 October 2026. **Current deliverable: implement the reviewed input → agent → program/assets → device pipeline for general app programming (D30).** The user clarified that they will supply the prompt and image and the product's Gemini agent must author the application. A coordinator-written whack-a-mole, canned template, or six-app whitelist would not meet that request. The planning deliverable was published at5a183fd. The subsequent active user goal (D30) resumes implementation and practical probes against these gates. This document owns the redesign; earlier [platform exploration](15-programmable-apps.md) preserves research/probe history. Planning a release is not evidence that its capabilities exist.
 
 ## Conclusion
 
@@ -255,6 +255,8 @@ Camera, microphone and speaker have BSP/driver foundations but no generated-app 
 Do not migrate to a new IDF/LVGL framework, implement a browser, permit raw generated firmware, or remove verification merely to make the format appear unrestricted. Those choices add separate engineering and recovery requirements. The release is complete when its general primitives and acceptance evidence pass—not when every conceivable device feature has been promised.
 
 ## Immediate handoff
+
+Historical planning handoff below. D30 implementation has since resumed: the repaired public G0 probe passed a real function/image continuation, and package/assets/store/shared-core slices passed scoped review. Use the [current ledger](12-work-ledger.md) for live assignments and the next authored-code integration gate. The ignored draft is not the accepted tool.
 
 The preceding audit was published at`d223469e89f2fca6057ff97c01598fa02ede3c53`: all158 reviewed file blobs and remote main were checked directly after full access became available. The revised plan and13-file document reconciliation passed independent agent/system review; public context and diff checks passed158 files. Its own publication follows the reviewed checkpoint workflow recorded in the ledger. No product generation, service restart or firmware change has occurred during this reassessment.
 

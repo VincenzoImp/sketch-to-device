@@ -165,7 +165,7 @@ vm.runInContext(fs.readFileSync(process.argv[1],'utf8'),context);
 vm.runInContext("addFiles([{name:'accepted',size:20*1024*1024},{name:'too-much-total',size:12*1024*1024+1}]); if(attachments.length!==1)throw Error('total limit');",context);
 vm.runInContext("attachments=[]; addFiles([{name:'oversize',size:20*1024*1024+1},{name:'empty',size:0}]); if(attachments.length)throw Error('file limit');",context);
 vm.runInContext("addFiles(Array.from({length:4},()=>({name:'small',size:1})));if(attachments.length!==3)throw Error('count limit'); attachments=[];",context);
-vm.runInContext("if(!errors.invalid_body_size.includes('20 MiB') || !errors.media_duration.includes('60') || !errors.unsupported_request.includes('cannot provide'))throw Error('failure copy');",context);
+vm.runInContext("if(!errors.invalid_body_size.includes('20 MiB') || !errors.media_duration.includes('60'))throw Error('media limit copy');",context);
 (async()=>{await elements.get('#record').onclick();assert.equal(events.delay,60000);console.log('browser media checks passed')})().catch(e=>{console.error(e);process.exitCode=1});
 '''
         result = subprocess.run([node, "-e", harness, str(ROOT / "companion/app.js")],

@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 10 October 2026. **Current task: plan the complete generation-pipeline redesign; Gemini must author apps from the user's prompt/image. No hand-built game substitutes.** The working demo remains intact. Read [the new plan](16-final-platform-plan.md), [handoff](09-session-handoff.md), [readiness](11-readiness.md) and [work ledger](12-work-ledger.md) before resuming.
+Updated: 10 October 2026, 18:00 Europe/Zurich. **Current task: implement the reviewed programmable generation platform (D30).** The user made the published plan summary an active goal. Gemini authors apps; the coordinator builds its SDK/tools/runtime. Planning was published at`5a183fd1ca8e40012e17f61d1408b595fba27c5f`, with all158 blobs and remote main verified. Production remains AppSpec0.2 until the new integration gates pass. Read [the plan](16-final-platform-plan.md), [handoff](09-session-handoff.md), [readiness](11-readiness.md) and [ledger](12-work-ledger.md).
 
 ## What works
 
@@ -8,7 +8,7 @@ Updated: 10 October 2026. **Current task: plan the complete generation-pipeline 
 - A separate photo-only request generated sequence7 Star Tap and worked physically. Its 10-second duration was a default; there was no accompanying audio. This is not combined photo/voice evidence.
 - After the service restart and runtime0.2 flash, fresh Hello Colors sequence12 passed exact activation, independent initial-state/six-press checks and user-confirmed physical color cycling. The next Flappy Bird request returned `unsupported_request` and preserved Hello Colors.
 - Display/touch, downloaded apps and authenticated HTTPS through the Android cellular hotspot work. Certificate verification stays enabled. The event Wi-Fi had a captive portal.
-- Verified public checkpoint before this redesign revision: [d223469](https://github.com/VincenzoImp/sketch-to-device/commit/d223469e89f2fca6057ff97c01598fa02ede3c53),158 reviewed files, directly published and matched to snapshot/remote main. Current planning changes need their own reviewed checkpoint.
+- Verified latest public checkpoint: [5a183fd](https://github.com/VincenzoImp/sketch-to-device/commit/5a183fd1ca8e40012e17f61d1408b595fba27c5f),158 reviewed files, matched to every committed blob and remote main. D30 implementation changes need their own reviewed checkpoints.
 
 ## Audit conclusion
 
@@ -25,8 +25,6 @@ The [release plan](16-final-platform-plan.md) selects one JavaScript SDK with ex
 
 ## Next action
 
-Complete independent review and public checkpoint of the revised full-chain plan. It specifies source authoring, SDK/tool freedom, actual image assets and trusted execution/repair, immutable candidate submission and durable device recovery. Official-source comparison retains managed Antigravity/Interactions as the next harness; AI Studio may help development/hosting and Pi remains a fallback. No new runtime or app capability has been deployed by this planning work.
+The real managed custom-tool/image continuation passed in20.314seconds. Reviewed package/assets/store and shared native-core slices now pass their scoped host checks; the runner wrapper and managed loop have passed independent review. Connect them through the job-owned broker and prove genuinely authored code before capability-aware production integration. Its first product proof uses a newly generated app from prompt/image, not a coordinator-written game. Wider requests and peripheral services have separate acceptance gates. Camera, microphone and speaker remain unavailable to generated apps until implemented/tested.
 
-After the planning deliverable, the next implementation milestone is the real tool bridge plus shared host/device programmable path. Its first proof uses a newly generated app from prompt/image, not a coordinator-written game. Wider requests and peripheral services have separate acceptance gates. Camera, microphone and speaker remain unavailable to generated apps until implemented/tested.
-
-The user authorizes autonomous work and periodic public commits. Full filesystem/network permission is now enabled; direct Git/GitHub operations passed. Verify serial/provider operations when needed instead of repeating old restriction claims. Preserve the live demo during planning; no new key, hotspot credential, prompt, image or flash is needed now.
+The user authorizes autonomous work and periodic public commits. Full filesystem/network permission is now enabled; direct Git/GitHub operations passed. Verify serial/provider operations when needed instead of repeating old restriction claims. Preserve the live demo during development; no new key or hotspot credential is needed.

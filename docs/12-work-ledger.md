@@ -2,7 +2,7 @@
 
 This is the authoritative task-state and ownership record. Gate definitions remain in [the execution plan](05-execution-plan.md); access conditions remain in [readiness](11-readiness.md). Update this file at each handoff. A future session must not infer active workers from completed research reports.
 
-Latest planning checkpoint: **17:26 Europe/Zurich, 10 October 2026**, below. The user clarified that Gemini must author the app from their prompt/image, then requested a serious full input-to-device redesign and primary-source AI Studio/Pi research. Feature implementation and live probes are held during this planning deliverable. Periodic reviewed public commits remain authorized; full access and direct publication are now observed. Historical checkpoints do not override this scope.
+Latest goal checkpoint: **18:00 Europe/Zurich, 10 October 2026**. The user set the reviewed plan summary as an active implementation goal (D30), resuming feature work and practical integration. Plan publication at5a183fd and all158 committed blobs/remote main were verified. The previous turn made concrete progress through reviewed public publication; this is the first implementation goal turn. Historical planning holds do not override D30.
 
 States: `not_started`, `in_progress`, `blocked`, `passed`. A passed implementation gate needs observed evidence. Ownership is a logical lane, not a promise that a particular prior agent session still exists.
 
@@ -14,12 +14,12 @@ States: `not_started`, `in_progress`, `blocked`, `passed`. A passed implementati
 | C02 scope and design | passed for planning | Coordinator; [product](02-product.md), [architecture](03-architecture.md), [contracts](04-contracts.md) | One-shot flow, canonical limits, timer semantics and deployment identity reconciled. Components are implemented and tested separately; complete physical integration remains pending |
 | C03 session and worker continuity | passed for planning | Coordinator; [handoff](09-session-handoff.md), [decisions](10-decisions.md), [readiness](11-readiness.md), this file | A fresh agent without chat history reconstructed product and next actions. Its findings are recorded below and reconciled |
 | C04 context audit and export | passed for initial snapshot | Coordinator; hardware independent archive review | 100-file initial export accepted, SHA-256 `01f3b33eaa2968d2b3ebe02e1df55934da414a82ad4de69df4484b0a7391b08b`. Current local doc edits need their own audit/review and later export if required |
-| C05 public GitHub publication | passed for latest checkpoint | Coordinator; [public repository](https://github.com/VincenzoImp/sketch-to-device) | Coordinator directly published `d223469e89f2fca6057ff97c01598fa02ede3c53`, then matched all158 reviewed file blobs and remote main. Initial history is preserved. The current redesign revision requires its own reviewed commit/push |
+| C05 public GitHub publication | passed for latest checkpoint | Coordinator; [public repository](https://github.com/VincenzoImp/sketch-to-device) | Coordinator published `5a183fd1ca8e40012e17f61d1408b595fba27c5f`, then matched all158 reviewed file blobs and remote main. Initial history is preserved. Subsequent D30 implementation requires reviewed checkpoints |
 | C06 autonomy and active research | passed for planning | Research author, independent cold-start reviewer; files released | [Working method](14-autonomy-and-research.md) verified against official sources; reviewer found no material defect. Implementation authorization now recorded |
 
 ## Product implementation gates
 
-These are the original AppSpec gates and their partial evidence. Feature work is now paused. [The unified release plan](16-final-platform-plan.md) owns the expanded programmable scope and future milestone order.
+These are the original AppSpec gates and their partial evidence. Programmable work has resumed under D30. [The unified release plan](16-final-platform-plan.md) owns the expanded programmable scope and future milestone order.
 
 Implementation was authorized on 10 October and initial work started around 12:15 Europe/Zurich. Gates remain open wherever their complete evidence is absent. Read-only inventory, configured credentials, headless checks and a working built-in app do not establish generated-app delivery from the phone.
 
@@ -40,16 +40,22 @@ The deployed baseline is preserved while reviewed source evolves. Voice generati
 
 | Task | Owner / state | Exclusive files and next action |
 | --- | --- | --- |
-| Full-chain redesign and reconciliation | Coordinator; plan and reconciliation accepted, checkpoint preparation | `docs/16-final-platform-plan.md`, README, AGENTS and current registers. No product implementation, live call, service restart or flash |
-| Agent and AI Studio research/review | partners_research; plan scope accepted | Read-only primary-source research and actual plan review; no source ownership remains |
-| Runtime alternatives and Pi research | hardware_research; report released | Read-only architecture/runtime/harness comparison; proposed tiny canvas API remains unfrozen |
-| Independent system/continuity review | cold_start_audit; plan and reconciliation accepted, files released | Inspect actual plan/diffs and current registers; no edits |
-| Tool-continuation draft | Parked; unaccepted | Ignored `artifacts/verification/drafts/probe_programmable_agent.py`; three cancellation defects remain, no live request made |
-| QuickJS/LVGL engine/UI/target probes | Released; accepted only at host/build scope | Public sources and isolated P4 build; no production or physical generated JS proof |
-| Physical helper | Parked; unreviewed | Ignored `.tools/programmable-target-ui/physical_probe.py`; do not execute |
-| Public checkpoint | Coordinator; next reviewed revision pending | Previous d223469 verified directly. Run context/diff checks and reviewed publisher after reconciliation acceptance |
+| Shared contracts and integration | Coordinator; in_progress | Programmable contract/package/receipt design, backend integration and current registers. Freeze interfaces before parallel integration |
+| Managed authoring loop and SDK | partners_research; source released for review | `backend/program_agent.py`, its focused tests and `agent-sdk/program-v1/*`. G0 completed; ordinary source generation and broker integration remain open |
+| Shared runtime and firmware integration design | hardware_research; core accepted, integration read-only | `firmware/program_core/*` released after review. Inspect production owner/task/recovery seams before firmware edits; also independently review the managed loop |
+| Independent review | cold_start_audit; active | Accepted G0, package/assets, candidate store and shared native core; reviewing root's supervised runner wrapper. No overlapping writes |
+| Production baseline | Coordinator; preserved | Running endpoint/hotspot/Hello Colors and frozen runtime0.2 restore image. No new firmware flashed |
 
-No physical probe or observer is active. Preserve the running service/endpoint, hotspot, Hello Colors and frozen runtime0.2 image. The user is not being asked to submit the later prompt/image before the new platform exists.
+No new physical observer is active. The user supplies their later product prompt/image; platform probes must not be represented as that acceptance.
+
+## Programmable implementation checkpoint at 17:55 Europe/Zurich
+
+- Root executed the reviewed G0 managed-function probe against authenticated Google at15:43:59UTC. Its correlated function continuation returned the real native-rendered PNG, and Gemini correctly observed its selected color.20314ms; report `artifacts/verification/programmable-agent-g0-20261010T154359-b48b0c31.json`. Independent review matched actual private call/environment IDs and image pixels. This fixed-program transport proof is not generated-code or device evidence.
+- Root DNS/TLS for Google and GitHub passed. An older worker still had DNS restrictions; that failure was before provider HTTP and does not restrict root. Live provider/publication operations remain coordinator-owned.
+- Strict schema2 package/profile and original-image RGBA conversion passed18tests and independent review. Review fixed extreme-aspect intermediate scaling and one-pixel contain behavior. Images retain alpha and private provenance; original uploads and perception JPEGs stay distinct.
+- Immutable candidate/version reservation, trusted receipts and exact publication passed10new store tests plus22legacy tests. Independent review reproduced and fixed a mixed legacy/program connection version collision. Synthetic store receipts establish persistence/ownership only.
+- Shared QuickJS/LVGL C core/parser/host CLI passed an ASan/UBSan100-cycle/adversarial harness and five real subprocess tests, including wire parity, images, all three clock qualities and oversized scenarios. Independent review accepted this slice. P4 object compilation passed; no target link, firmware deployment or physical JavaScript execution has occurred.
+- Root's supervised native runner wrapper passed six tests and independent review after fixing a deadline overrun during frame verification. The managed source-authoring loop/consultable SDK passed22protocol tests and independent review after fixing late-submission acceptance. The complete suite passed248tests before those last two adapter regressions, which passed in the affected22-test rerun. These are source/local checks; no live arbitrary-program generation is claimed yet. Next: reviewed broker, actual Gemini-authored code execution/repair, then capability-aware production integration and recoverable physical installation. The production0.2 service/device and exact restore image remain intact.
 
 ## Review evidence
 
@@ -333,3 +339,7 @@ The provider worker's unaccepted G0 script was moved unchanged out of public sou
 The agent/pipeline and system reviewers accepted the actual revised canonical plan against current primary sources with no material findings. The independent cold-start reviewer then accepted all13 changed documents, checked the parked draft and reran the public context audit (158files PASS) and diff check (PASS). Root ran the same checks. Only documentation changed; no firmware build/flash, service restart or generated-app installation took place during it.
 
 Checkpoint preparation: freeze the exact158-file snapshot in ignored `artifacts/verification/checkpoint-agent-redesign.json`, then run the authorized publisher with message `Plan full agent and runtime redesign`. After success, verify every committed blob and remote main; write the sanitized result to ignored `artifacts/verification/checkpoint-agent-redesign-publication.json`. The commit containing this record cannot embed its own hash; use that observed receipt and Git history for this revision, rather than interpreting the preceding d223469 checkpoint as the new one. Public source remains subject to the same private-material exclusion rules.
+
+## Active implementation goal at 17:36 Europe/Zurich
+
+Read the user-provided attachment in full: it repeats the published redesign objective and explicitly makes achieving that platform the active goal. Scope is the real generated-source/SDK/tools/execution/recovery pipeline, not merely another plan or a hand-built game. D30 records this resumption. Start by repairing/reviewing the known G0 continuation/cancellation defects and proving the real tool/image route, while freezing shared runtime/package contracts. Current Git HEAD and clean tree before this update were5a183fd. No new live calls or physical changes have occurred yet.
