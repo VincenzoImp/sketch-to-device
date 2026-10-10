@@ -2,9 +2,11 @@
 
 ## One-minute state
 
-**Latest instruction (D32): save Penguin Tap first, commit/push the reviewed work, fix remaining bugs, then let the user repeat end to end.** The private backup is complete and independently accepted. It preserves the original v3 package/source, matching configured firmware and a consistent database snapshot in `private/saved-apps/penguin-tap-v3/`. Never publish those private files. An additional verified stabilized v8 snapshot is retained under `private/saved-apps/`; the ledger records its exact directory and manifest hash.
+**Latest instruction (D33): commit everything and shut down.** The supervisor, backend and HTTPS tunnel are stopped; port8787 has no listener and no project test/monitor/build process remains. No generation was busy at shutdown. Keep the project idle until the user requests resumption. USB power and the phone hotspot have not been switched off remotely. The D32 state below is the preserved last running state, not a currently available service.
 
-Runtime0.3.0 is flashed and connected. The reviewed activation, recovered-app acknowledgment, startup-budget and PSRAM corrections are installed. Penguin Tap v8/sequence24 has an exact active acknowledgment; source/assets remain Gemini-authored sequence17 unchanged. Two consecutive replacements without an intervening reboot passed with exact ACKs; the second observed three engine instances with257015internal bytes free. These are delivery diagnostics, not a fresh generation or physical gameplay proof. The ledger owns detailed timing, failures and recovery evidence; a clean exclusive reset restored version8 with no HTTP/TLS failure, panic, stack overflow or assertion.
+**Completed stabilization request (D32): save Penguin Tap first, commit/push the reviewed work, fix remaining bugs, then let the user repeat end to end.** The private backup is complete and independently accepted. It preserves the original v3 package/source, matching configured firmware and a consistent database snapshot in `private/saved-apps/penguin-tap-v3/`. Never publish those private files. An additional verified stabilized v8 snapshot is retained under `private/saved-apps/`; the ledger records its exact directory and manifest hash.
+
+Runtime0.3.0 is flashed; its last running connection was verified before the intentional shutdown. The reviewed activation, recovered-app acknowledgment, startup-budget and PSRAM corrections are installed. Penguin Tap v8/sequence24 has an exact active acknowledgment; source/assets remain Gemini-authored sequence17 unchanged. Two consecutive replacements without an intervening reboot passed with exact ACKs; the second observed three engine instances with257015internal bytes free. These are delivery diagnostics, not a fresh generation or physical gameplay proof. The ledger owns detailed timing, failures and recovery evidence; a clean exclusive reset restored version8 with no HTTP/TLS failure, panic, stack overflow or assertion.
 
 Gemini must author apps from user inputs; no coordinator-written games or hidden templates. The available programmable SDK exposes ordinary JavaScript, canvas, input, time and packaged images. Camera/microphone/speaker APIs are not implemented. Text, image and audio remain valid alone or combined. Preserve legacy schema 1 compatibility and all restore images.
 
@@ -13,9 +15,9 @@ The live service endpoint/identity and hotspot credentials are private. Full fil
 ## Next actions
 
 1. The requested backup and reviewed stabilization checkpoint are complete and activated. Preserve them.
-2. Preserve the accepted physical replacement/reboot evidence and immutable private backups. Provider termination is still unconfirmed. Keep the active app/service running.
-3. Keep the reviewed public history current and verify remote main before another checkpoint; the additional v8 snapshot is already verified and the companion is ready for the user.
-4. Let the user submit their own fresh prompt/media and verify exact installation plus physical gameplay. Report remaining capability limits honestly; do not present a host simulator or emergency republish as that end-to-end result.
+2. Preserve the accepted physical replacement/reboot evidence and immutable private backups. Provider termination is still unconfirmed. Leave services stopped under D33.
+3. Keep the reviewed public history current and verify remote main before another checkpoint; the additional v8 snapshot is already verified and the companion is intentionally offline.
+4. Only after the user requests resumption, restart the service and reconcile its new tunnel endpoint with the private device configuration before a fresh prompt/media test. Then verify exact installation plus physical gameplay. Report remaining capability limits honestly; do not present a host simulator or emergency republish as that end-to-end result.
 
 There is no per-app firmware compilation. Flash-Lite remains the measured default; an earlier controlled comparison took 40.007 seconds versus 139.112 seconds for Flash, not a universal ranking. Measure generation/tool/delivery phases rather than guessing the source of delay. [The release plan](16-final-platform-plan.md) retains the broader acceptance cases and physically unproved extensions.
 

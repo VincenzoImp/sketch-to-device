@@ -4,6 +4,8 @@ Updated: 10 October 2026, stabilization under D32. Back up the installed Penguin
 
 ## Current conditions
 
+D33 supersedes the instruction to keep the service running: backend, supervisor and tunnel are intentionally stopped after verified publication. No local job was busy; port8787 is closed. The conditions below retain the last tested capabilities. Resume only on a new user request, reconciling any changed tunnel endpoint first. Physical board power and hotspot controls remain with the user.
+
 | ID | Observed condition | Next action |
 | --- | --- | --- |
 | R01 providers | Private keys and real Gradium/Gemini calls work. Managed Gemini authored ordinary JavaScript and used trusted custom tools | Supersession and repair feedback fixes are active; provider termination remains an open limitation. Earlier colon cancellation returned 404; the latest slash request returned 400 and readback still requires_action. Remote termination is unconfirmed |

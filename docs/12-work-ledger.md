@@ -1,5 +1,9 @@
 # Work and gate ledger
 
+## User-requested shutdown (D33)
+
+All implementation and verification documentation was already committed at `9e95f651a1fdbee4d8f1b3844219c1cb2d8a4d19`; root verified exact remote main and a clean public working tree. The authenticated session reported generation idle. Root sent SIGINT only to the identified project supervisor; its normal cleanup stopped its owned backend and Cloudflare tunnel. All three processes exited, no project Python/tunnel/build/monitor process remained, and port8787 had no listener. No firmware flash, storage erase, provider generation or backup alteration occurred. Original v3 and stabilized v8 Penguin backups remain private. The following stabilization sections describe earlier running-state evidence. All implementation owners are released; only this shutdown record is being checkpointed. Future startup/tests wait for the user. USB power and the Android hotspot were not remotely switched off.
+
 ## Current stabilization task (D32)
 
 The user now requests, in order: save Penguin Tap, publish the reviewed work, fix remaining bugs, then let them repeat the end-to-end flow. The earlier submission deadline no longer limits this task. Historical checkpoints below retain the evidence available at their timestamps.

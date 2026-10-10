@@ -56,6 +56,10 @@ Do not relabel unimplemented broader SDK features as finished because time is sh
 
 The latest user removes the immediate deadline and specifies this order: save the installed Penguin Tap first, commit/push all reviewed public work, fix remaining bugs, then let them repeat the end-to-end flow. The exact private package/source/firmware/database backup is complete and independently verified. Configured binaries, inputs and credentials remain private. Preserve the working app/service; Gemini must author the next user request. D32 supersedes D31's deadline priority, while retaining the broader [release plan](16-final-platform-plan.md) and its honest capability gates.
 
+## D33 — Commit and shut down
+
+After stabilization, the user explicitly requests committing everything and shutting down. Preserve the verified private Penguin backups and installed app storage, verify the public push, stop project services/processes and leave the project idle. Do not resume providers, probes or service startup until requested. This supersedes D32's instruction to leave the working service running. USB power and the Android hotspot are physical controls; stopping the Mac service does not power them off.
+
 ## Refinements that must not be undone accidentally
 
 | Earlier direction | Current interpretation |

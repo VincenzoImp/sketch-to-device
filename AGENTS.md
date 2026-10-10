@@ -2,6 +2,8 @@
 
 ## Objective and current phase
 
+**Latest steering: commit/push all public work and shut down project services (D33).** The backend, supervisor and HTTPS tunnel are intentionally stopped. Preserve private backups and installed app storage; do not restart services or resume probes/generation until the user asks to resume. The stabilization record below is historical context.
+
 **Latest user steering (10 October, stabilization): save the installed Penguin Tap first, commit/push all reviewed public work, fix remaining bugs, then let the user repeat end to end.** The private exact backup is complete and independently verified; see [the work ledger](docs/12-work-ledger.md) for checkpoint progress and ownership. The earlier immediate deadline is superseded by D32. [The release plan](docs/16-final-platform-plan.md) still owns the broader programmable scope and gates. Gemini inside the product authors app logic from user inputs; no coordinator-written game or hidden game template may substitute. Preserve the working service/device, private Penguin backup and exact restore images. Full filesystem/network access and direct publication are observed; do not assume historical restrictions still apply.
 
 Read [README.md](README.md), [session handoff](docs/09-session-handoff.md), [current status](docs/00-status.md), and relevant linked documents before working. Build toward this outcome: one prompt from an Android phone → a Gemini agent using real tools → a validated app package → an interactive app installed on the Waveshare ESP32-P4-WIFI6-Touch-LCD-3.5. Use Google DeepMind and Gradium substantively. The user has explicitly requested subagents and iterative verification.

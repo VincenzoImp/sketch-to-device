@@ -1,8 +1,10 @@
 # Project status
 
-Updated: 10 October 2026. **Current task (D32): save Penguin Tap, publish the reviewed work, fix remaining bugs, then let the user repeat the end-to-end flow.** The earlier submission deadline no longer limits this stabilization task. Gemini inside the product authors apps; the coordinator supplies its tools/runtime, without hand-written game substitutes.
+Updated: 10 October 2026. **Current task (D33): commit/push reviewed public work and leave project services shut down.** Stabilization under D32 is complete to the scope recorded below; the fresh user E2E remains pending. The earlier submission deadline no longer limits this stabilization task. Gemini inside the product authors apps; the coordinator supplies its tools/runtime, without hand-written game substitutes.
 
 ## Current working state
+
+**Intentionally shut down at the user's request (D33).** Public work through `9e95f651a1fdbee4d8f1b3844219c1cb2d8a4d19` was verified on remote main before shutdown. The idle supervisor, backend and Cloudflare tunnel exited; no project Python/tunnel/build/monitor process or listener on port8787 remained. Backups and installed Penguin storage are preserved. The evidence below describes the last running state; the companion is now offline by design.
 
 - Runtime 0.3.0 is flashed and connected through the Android cellular hotspot. Its authenticated capability report matches the built ELF and advertises schema 1/2 and `p4-canvas-1`.
 - **Penguin Tap version 8 is active**, sequence 24, with exact device acknowledgment of SHA256 `fdc2a49c923a0082c968cfcbb7eca18bd8c1d1f75f548a4cebfde2c9ee8759da`. Its source/assets remain the original Gemini-authored sequence 17 output. Two consecutive unchanged-source replacements passed on the physical board after independent native execution; measured ACK waits were11.274 and15.137seconds. These are delivery diagnostics, not physical gameplay or a fresh one-action generation proof.
