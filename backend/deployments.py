@@ -364,7 +364,15 @@ class DeploymentStore:
                     if ack["status"] == "active":
                         self._db.execute("UPDATE devices SET active_id=? WHERE device_id=?", (row["deployment_id"], authenticated_device_id))
             final = self._db.execute("SELECT status FROM deployments WHERE deployment_id=?", (row["deployment_id"],)).fetchone()[0]
+            # Reboot/recovery may confirm the retained active app while a newer
+            # intent is failed or still pending. This receipt must not credit
+            # that newer intent, nor promote a stale or quarantined deployment.
+            active_id = self._device(authenticated_device_id)["active_id"]
+            active_confirmed = (ack["status"] == "active" and active_id == row["deployment_id"]
+                                and device["session_id"] == row["session_id"]
+                                and final == "active" and not quarantined)
             return {"recorded": bool(recorded), "current_success": bool(current and final == "active"),
+                    "active_confirmed": bool(active_confirmed),
                     "deployment_id": row["deployment_id"]}
 
     def ack_history(self, session_id, intent_id):

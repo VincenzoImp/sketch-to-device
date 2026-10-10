@@ -155,11 +155,45 @@ class DeploymentTests(unittest.TestCase):
         new = self.publish(self.intent("request_two"))
         outcome = self.store.record_ack("device_one", acknowledgment(old))
         self.assertFalse(outcome["current_success"])
+        self.assertFalse(outcome["active_confirmed"])
         self.assertIsNone(self.store.active_for_session("session_one", "device_one"))
         self.assertEqual(self.store.desired_for_device("device_one"), new)
         self.assertTrue(self.store.record_ack("device_one", acknowledgment(new))["current_success"])
         self.store.record_ack("device_one", acknowledgment(old))
         self.assertEqual(self.store.active_for_session("session_one", "device_one"), new)
+
+    def test_retained_active_confirmation_does_not_complete_newer_intent(self):
+        active = self.establish_active()
+        new_intent = self.intent("request_two")
+        new = self.publish(new_intent)
+        answer = self.store.record_ack("device_one", acknowledgment(active))
+        self.assertFalse(answer["current_success"])
+        self.assertTrue(answer["active_confirmed"])
+        self.assertEqual(self.store.desired_for_device("device_one"), new)
+        self.assertEqual(self.store.active_for_session("session_one", "device_one"), active)
+        self.assertFalse(self.store.record_ack("device_one", acknowledgment(active, "activating"))["active_confirmed"])
+        current = self.store.record_ack("device_one", acknowledgment(new))
+        self.assertTrue(current["current_success"])
+        self.assertTrue(current["active_confirmed"])
+        self.assertFalse(self.store.record_ack("device_one", acknowledgment(active))["active_confirmed"])
+
+    def test_rebound_previous_session_active_is_not_confirmed(self):
+        active = self.establish_active()
+        self.store.bind_device("session_two", "device_one")
+        answer = self.store.record_ack("device_one", acknowledgment(active))
+        self.assertFalse(answer["current_success"])
+        self.assertFalse(answer["active_confirmed"])
+
+    def test_active_confirmation_requires_active_ack_preserving_legacy_success_meaning(self):
+        active = self.establish_active()
+        late_failure = acknowledgment(active, "failed")
+        late_failure["error_code"] = "historical_failure"
+        answer = self.store.record_ack("device_one", late_failure)
+        # Legacy current_success describes the current deployment state, even
+        # for a late non-active receipt. The new field confirms active ACKs only.
+        self.assertTrue(answer["current_success"])
+        self.assertFalse(answer["active_confirmed"])
+        self.assertEqual(self.store.active_for_session("session_one", "device_one"), active)
 
     def test_invalid_app_never_publishes_or_changes_active(self):
         active = self.establish_active()

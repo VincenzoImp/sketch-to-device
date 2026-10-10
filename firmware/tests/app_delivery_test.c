@@ -6,7 +6,8 @@
 static struct blob { unsigned char *data;size_t size; } disk[4],pending_blob;
 static int pending_key=-1,persistence_calls,fail_at,fail_mode;
 static bool slow_trickle;static unsigned reads;
-static bool offline;static int active_result=1,recovery_reply_mode;
+static bool offline;static int active_result=1,active_confirmed=-1,recovery_reply_mode;
+static const char *ack_response_override;
 static int active_receipts,recovery_receipts,capability_receipts;
 static uint64_t host_ms;static esp_reset_reason_t reset_reason;
 static char envelope[2048],last_recovery[2048],last_capability[1024];
@@ -60,7 +61,9 @@ int64_t esp_http_client_fetch_headers(esp_http_client_handle_t h){
    ++active_receipts;assert(disk[0].size==sizeof(metadata));install_metadata m;memcpy(&m,disk[0].data,sizeof(m));assert(m.pending==0&&m.active>=0&&!strcmp(m.slots[m.active].deployment_id,string(j,"deployment_id")));
    if(active_result<0){cJSON_Delete(j);return -1;}
   }
-  snprintf(h->response,sizeof(h->response),"{\"recorded\":true,\"current_success\":%s,\"deployment_id\":\"%s\"}",active_result?"true":"false",string(j,"deployment_id"));cJSON_Delete(j);
+  if(ack_response_override)snprintf(h->response,sizeof(h->response),"%s",ack_response_override);
+  else if(active_confirmed<0)snprintf(h->response,sizeof(h->response),"{\"recorded\":true,\"current_success\":%s,\"deployment_id\":\"%s\"}",active_result?"true":"false",string(j,"deployment_id"));
+  else snprintf(h->response,sizeof(h->response),"{\"recorded\":true,\"current_success\":%s,\"active_confirmed\":%s,\"deployment_id\":\"%s\"}",active_result?"true":"false",active_confirmed?"true":"false",string(j,"deployment_id"));cJSON_Delete(j);
  }else{h->bytes=wire_package;h->size=wire_size;}
  if(!h->bytes){h->bytes=h->response;h->size=strlen(h->response);}return h->size;
 }
@@ -83,7 +86,7 @@ int esp_netif_init(void){return 2;}int esp_event_loop_create_default(void){retur
 int esp_wifi_init(const wifi_init_config_t *c){(void)c;return 2;}int esp_event_handler_register(esp_event_base_t b,int id,void (*f)(void *,esp_event_base_t,int32_t,void *),void *p){(void)b;(void)id;(void)f;(void)p;return 2;}
 int esp_wifi_set_mode(int m){(void)m;return 2;}int esp_wifi_set_config(int i,const wifi_config_t *c){(void)i;(void)c;return 2;}int esp_wifi_start(void){return 2;}int esp_wifi_connect(void){return 2;}int esp_netif_sntp_init(const esp_sntp_config_t *c){(void)c;return 2;}
 static void reboot(void){clear_ui();memset(&metadata,0,sizeof(metadata));memset(&journal,0,sizeof(journal));memset(slot_tickets,0,sizeof(slot_tickets));flow=(install_flow){0};storage_halted=boot_complete=false;pending_key=-1;next_network_ms=next_capability_ms=0;strcpy(boot_id,"test_boot");assert(restore());}
-static void clean(void){clear_ui();for(int i=0;i<4;i++){free(disk[i].data);disk[i]=(struct blob){0};}fail_at=fail_mode=persistence_calls=0;offline=false;active_result=1;recovery_reply_mode=0;reset_reason=ESP_RST_POWERON;reboot();}
+static void clean(void){clear_ui();for(int i=0;i<4;i++){free(disk[i].data);disk[i]=(struct blob){0};}fail_at=fail_mode=persistence_calls=0;offline=false;active_result=1;active_confirmed=-1;ack_response_override=NULL;recovery_reply_mode=0;reset_reason=ESP_RST_POWERON;reboot();}
 static void steps(unsigned n,bool network){for(unsigned i=0;i<n;i++){ui_step();local_step();host_ms+=2001;if(network)network_step();}}
 static deployment describe(const char *id,int sequence,int schema){const char *error;app_package *p=app_package_parse(wire_package,wire_size,&error);assert(p);deployment d={0};strcpy(d.deployment_id,id);d.sequence=sequence;d.version=p->version;d.size=(uint32_t)wire_size;strcpy(d.app_id,p->app_id);app_package_free(p);unsigned char hash[32];mbedtls_sha256((const unsigned char *)wire_package,wire_size,hash,0);for(int i=0;i<32;i++)snprintf(d.sha256+2*i,3,"%02x",hash[i]);snprintf(d.path,sizeof(d.path),"/api/apps/%s/versions/%d",d.app_id,d.version);
  snprintf(envelope,sizeof(envelope),"{\"desired\":{\"deployment_id\":\"%s\",\"sequence\":%d,\"manifest\":{\"schema_version\":%d,\"app_id\":\"%s\",\"version\":%d,\"size_bytes\":%u,\"sha256\":\"%s\",\"min_runtime_version\":\"%s\",\"download_path\":\"%s\"}}}",id,sequence,schema,d.app_id,d.version,d.size,d.sha256,schema==2?"0.3.0":"0.1.0",d.path);desired_schema=schema;return d;}
@@ -99,6 +102,22 @@ int main(void){
  char slow_body[4097];size_t slow_used;reads=0;slow_trickle=true;uint64_t started=host_ms;
  assert(!request("/api/device/desired",NULL,slow_body,4096,&slow_used)&&reads==8&&host_ms-started==8000);
  slow_trickle=false;install_and_ack(first);assert_coherent();
+ /* The real response parser accepts only exact legacy/additive boolean shapes. */
+ const char *invalid_ack[]={
+  "{\"recorded\":true,\"current_success\":false,\"active_confirmed\":1,\"deployment_id\":\"first\"}",
+  "{\"recorded\":true,\"current_success\":false,\"active_confirmed\":null,\"deployment_id\":\"first\"}",
+  "{\"recorded\":true,\"current_success\":false,\"active_confirmed\":true,\"deployment_id\":\"other\"}",
+  "{\"recorded\":true,\"current_success\":false,\"unknown\":true,\"deployment_id\":\"first\"}",
+  "{\"recorded\":true,\"current_success\":false,\"active_confirmed\":true,\"deployment_id\":\"first\",\"unknown\":1}",
+  "{\"recorded\":true,\"active_confirmed\":true,\"deployment_id\":\"first\"}",
+  "{\"recorded\":1,\"current_success\":false,\"active_confirmed\":true,\"deployment_id\":\"first\"}",
+  "{\"recorded\":true,\"current_success\":false,\"active_confirmed\":true,\"active_confirmed\":false,\"deployment_id\":\"first\"}"
+ };
+ for(size_t i=0;i<sizeof(invalid_ack)/sizeof(*invalid_ack);i++){ack_response_override=invalid_ack[i];assert(ack(&first,"active",NULL)==-1);}
+ ack_response_override="{\"recorded\":false,\"current_success\":false,\"active_confirmed\":true,\"deployment_id\":\"first\"}";
+ assert(ack(&first,"active",NULL)==1);ack_response_override=NULL;
+ active_result=0;assert(ack(&first,"active",NULL)==0);active_confirmed=0;assert(ack(&first,"active",NULL)==0);
+ active_result=1;assert(ack(&first,"active",NULL)==1);active_confirmed=-1;
  reboot();steps(20,true);assert_coherent();assert(!strcmp(metadata.slots[metadata.active].deployment_id,"first"));
  /* Lost active ACK never prevents the local fault guard and rollback. */
  wire_package=program;wire_size=strlen(program);deployment second=describe("second",2,2);active_result=-1;install(&second);steps(30,true);assert(journal.ack_slot==metadata.active&&same(&metadata.slots[metadata.active],&second));
@@ -126,6 +145,19 @@ int main(void){
  wire_package=legacy;wire_size=legacy_size;clean();first=describe("old_ack",1,1);install_and_ack(first);
  wire_package=program;wire_size=strlen(program);second=describe("stale",2,2);active_result=0;install(&second);steps(35,true);
  assert(metadata.active==0&&!strcmp(metadata.slots[0].deployment_id,"old_ack"));assert_coherent();
+ /* Recover B->A, acknowledge recovery, then reboot healthy A while the newer
+  * intent remains failed. Exact active confirmation must not quarantine A. */
+ wire_package=legacy;wire_size=legacy_size;clean();first=describe("healthy_fallback",1,1);install_and_ack(first);
+ wire_package=program;wire_size=strlen(program);second=describe("failed_newer",2,2);install_and_ack(second);
+ offline=true;fail_live();steps(25,false);assert(journal.count==1&&metadata.active==0);
+ offline=false;assert(send_recovery()&&!journal.count);uint64_t next_recovery=journal.next_sequence;
+ strcpy(envelope,"{\"desired\":null}");active_result=0;active_confirmed=1;
+ reboot();steps(25,true);assert_coherent();assert(metadata.active==0&&journal.ack_slot==-1&&!journal.count&&journal.next_sequence==next_recovery&&!quarantined(0));
+ reboot();steps(25,true);assert_coherent();assert(metadata.active==0&&journal.ack_slot==-1&&!journal.count&&journal.next_sequence==next_recovery);
+ /* A fresh candidate with both booleans false is still rolled back/quarantined. */
+ wire_package=legacy;wire_size=legacy_size;clean();first=describe("kept",1,1);install_and_ack(first);
+ wire_package=program;wire_size=strlen(program);second=describe("stale_new_wire",2,2);active_result=0;active_confirmed=0;install(&second);steps(35,true);
+ assert_coherent();assert(metadata.active==0&&quarantined(1));
  /* Reboot reconstructs the prior package; it can pass activation and then
   * fail before COMMIT. Preserve A->B, then persist B->built-in separately. */
  wire_package=legacy;wire_size=legacy_size;clean();first=describe("fallback",1,1);install_and_ack(first);

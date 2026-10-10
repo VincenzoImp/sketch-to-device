@@ -74,6 +74,8 @@ dependencies. Configure with the installed CMake/Ninja, keeping outputs ignored:
 .tools/espressif/tools/cmake/3.30.2/CMake.app/Contents/bin/cmake \
   --build .tools/program-core-host -j8
 .tools/program-core-host/program_tests
+.tools/program-core-host/startup_tests
+.tools/program-core-host/allocator_tests
 python3 -B -m unittest firmware.program_core.test_runner -v
 ```
 
@@ -84,6 +86,11 @@ teardown followed by LVGL refresh and100install/dispose cycles. CLI tests run
 real subprocesses, validate real frame bytes/hashes and compare malformed wire
 packages with the Python validator. These are platform tests, not generated-app
 or physical-device evidence.
+The allocator test compiles the actual ESP allocation branches against a
+synthetic capability-aware heap port, checks failed allocation/reallocation,
+preserved contents/accounting, alignment and quota rejection, then runs100real
+QuickJS creation/dispatch/disposal cycles. It verifies requested capabilities,
+not the performance or capacity of physical PSRAM.
 
 The fixed host executable accepts only:
 
@@ -144,7 +151,7 @@ gracefully contained; candidate admission and target headroom must be qualified.
 Soft interpreter interrupts are not hard deadlines during parser/native work.
 Initialization separates trusted engine/binding setup, source compilation, and
 ordinary JavaScript evaluation. Setup no longer consumes the application's
-50ms checkpoint. Compilation has a separate50ms soft budget, the existing
+50ms checkpoint. Compilation has a separate250ms soft budget, the existing
 source/memory bounds, and an elapsed check after the compiler returns; the
 parser is not guaranteed to be preemptible. The interrupt handler is installed
 after trusted setup, before compilation. Evaluation and its microtasks start
@@ -157,5 +164,14 @@ setup delay, separate compilation/evaluation, compiler expiry and infinite
 initialization/callback loops. Device logs also record bounded instance counts
 and memory at PREPARE, READY/failure and COMMIT; these are measurements, not an
 OOM guarantee.
+On ESP32-P4, the QuickJS allocator requests `SPIRAM | 8BIT` explicitly for both
+allocation and reallocation, with no internal-memory fallback. Failure leaves
+the original realloc pointer and payload accounting intact. Host builds retain
+their standard allocator. The256KiB engine heap and512KiB payload caps do not
+change. Runtime structures, package parsing, LVGL and system allocations are
+separate; PSRAM routing does not establish whole-device headroom. The compiler
+margin follows an observed56,969us compile of unchanged source during device
+replacement, compared with7,663us after startup. It remains a soft limit and
+does not enlarge the application's50ms execution checkpoint.
 This slice does not claim thread-safe arbitrary callers, physical frame timing,
 complete production lifecycle/rollback, camera/audio support or sandbox perfection.

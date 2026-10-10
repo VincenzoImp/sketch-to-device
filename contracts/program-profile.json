@@ -22,6 +22,7 @@
     "js_heap_bytes": 262144,
     "allocator_payload_bytes": 524288,
     "js_stack_bytes": 32768,
+    "compile_ms": 250,
     "callback_ms": 50,
     "microtasks_per_callback": 64,
     "scenario_events": 4096,
@@ -34,6 +35,6 @@
     "pixel_work": 552960
   },
   "asset_format": "rgba8888",
-  "deployed": false,
+  "deployed": true,
   "physical_qualification": "pending"
 }

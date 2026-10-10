@@ -73,6 +73,33 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(self.history(failed), before)
         self.assertEqual(self.counts(), [1, 1])
 
+    def test_reboot_confirms_exact_recovered_active_without_crediting_failed_intent(self):
+        old, failed = self.deployment(), self.deployment(active=False)
+        self.store.record_recovery("board", report(failed, old, error="activation_failed"))
+        self.store.close()
+        self.store = RecoveryStore(self.path)
+        result = self.store.record_ack("board", acknowledgment(old))
+        self.assertFalse(result["recorded"])
+        self.assertFalse(result["current_success"])
+        self.assertTrue(result["active_confirmed"])
+        self.assertEqual(self.active(), old)
+        self.assertIsNone(self.store.desired_for_device("board"))
+        current = self.store._device("board")
+        self.assertEqual(current["current_intent_id"], self.intents[failed["deployment_id"]][1])
+        self.assertEqual(self.history(failed), [])
+        self.assertFalse(self.store.record_ack("board", acknowledgment(failed))["active_confirmed"])
+        queued = self.deployment(active=False)
+        self.assertTrue(self.store.record_ack("board", acknowledgment(old))["active_confirmed"])
+        self.assertEqual(self.store.desired_for_device("board"), queued)
+        # A subsequent real failure remains permanent: the confirmation cannot
+        # resurrect the app after the durable recovery says it is no longer live.
+        self.store.record_recovery("board", report(old, None, 2, "report-two", "activation_failed"))
+        rejected = self.store.record_ack("board", acknowledgment(old))
+        self.assertFalse(rejected["current_success"])
+        self.assertFalse(rejected["active_confirmed"])
+        self.assertIsNone(self.active())
+        self.assertEqual(self.store.desired_for_device("board"), queued)
+
     def test_schema2_failure_can_restore_exact_legacy_package_without_its_active_ack(self):
         from tests.test_device_runtime import report as capability_report
         self.store.record_capabilities("board", capability_report())
@@ -87,6 +114,10 @@ class RecoveryTests(unittest.TestCase):
         self.assertTrue(self.store.record_recovery("board", report(failed, old))["applied"])
         self.assertEqual(self.active(), old)
         self.assertEqual(self.history(old), [])
+        first_ack = self.store.record_ack("board", acknowledgment(old))
+        self.assertTrue(first_ack["recorded"])
+        self.assertTrue(first_ack["active_confirmed"])
+        self.assertFalse(first_ack["current_success"])
 
     def test_racing_late_ack_and_recovery_always_finish_on_restored_identity(self):
         old, failed = self.deployment(), self.deployment(active=False)
@@ -212,6 +243,10 @@ class RecoveryTests(unittest.TestCase):
             legacy._db.execute("UPDATE deployments SET status='activating' WHERE deployment_id=?", (failed["deployment_id"],))
             self.assertFalse(legacy.record_ack("board", acknowledgment(failed))["current_success"])
             self.assertEqual(legacy.active_for_session("owner", "board"), old)
+            # Even inconsistent active metadata cannot bypass permanent quarantine.
+            legacy._db.execute("UPDATE devices SET active_id=? WHERE device_id='board'", (failed["deployment_id"],))
+            legacy._db.execute("UPDATE deployments SET status='active' WHERE deployment_id=?", (failed["deployment_id"],))
+            self.assertFalse(legacy.record_ack("board", acknowledgment(failed))["active_confirmed"])
         self.assertEqual(self.history(failed), [{"status": "active", "error_code": ""}])
 
     def test_quarantined_target_cannot_be_restored_by_a_new_report(self):

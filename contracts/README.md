@@ -63,5 +63,7 @@ Optional button `background_color` accepts exact `#RRGGBB`. The host and device 
 ## Programmable extension
 
 The separately versioned [programmable contract](programmable.md) defines the
-schema2 implementation target. It does not change the deployed schema1 runtime
-or establish device support until the implementation gates pass.
+schema2 package supported by the installed runtime0.3.0, with schema1 compatibility
+preserved. The backend uses a fresh authenticated device report to select this
+profile. [Current status](../docs/00-status.md) records physical observations and
+remaining acceptance gates; installation alone does not establish every capability.

@@ -27,11 +27,17 @@ int main(void) {
     assert(r&&!error&&!strcmp(startup.stage,"ready"));
     assert(startup.setup_us==60000&&startup.compile_us==40000&&startup.evaluate_us==20000);
     pr_destroy(r);
-    /* Reject exactly at the compiler's separate50ms boundary and never evaluate. */
-    setup_delay=0;compile_delay=50000;evaluate_delay=0;
+    /* Measured target compilation took57ms; it must not consume app execution. */
+    setup_delay=0;compile_delay=57000;evaluate_delay=20000;
+    r=sample("let n=0;for(let i=0;i<1000;i++)n+=i;",&startup,&error);
+    assert(r&&startup.compile_us==57000&&startup.evaluate_us==20000);pr_destroy(r);
+    compile_delay=249999;evaluate_delay=0;
+    r=sample("let n=1;",&startup,&error);assert(r);pr_destroy(r);
+    /* Reject exactly at the compiler's separate250ms boundary and never evaluate. */
+    setup_delay=0;compile_delay=250000;evaluate_delay=0;
     r=sample("while(true){}",&startup,&error);
     assert(!r&&!strcmp(error,"execution_budget")&&!strcmp(startup.stage,"compile"));
-    assert(startup.compile_us==50000&&!startup.evaluate_us&&!startup.evaluate_interrupts);
+    assert(startup.compile_us==250000&&!startup.evaluate_us&&!startup.evaluate_interrupts);
     compile_delay=0;evaluate_delay=60000;
     r=sample("while(true){}",&startup,&error);
     assert(!r&&!strcmp(error,"execution_budget")&&!strcmp(startup.stage,"evaluate"));

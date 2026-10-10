@@ -1,8 +1,9 @@
 # Programmable package and execution contract
 
-Revision1, implementation contract for D30. This contract is **not a capability
-announcement**. The installed device remains AppSpec0.2. The first new profile is
-defined in [program-profile.json](program-profile.json); physical qualification
+Revision1, implementation contract for D30. Runtime0.3.0 is installed with
+schema1 compatibility and the first programmable profile defined in
+[program-profile.json](program-profile.json). A fresh authenticated device report,
+not this source document, establishes the connected device's capabilities. Full physical qualification
 and later dynamic-control/device modules remain release gates in
 [the platform plan](../docs/16-final-platform-plan.md).
 
@@ -91,6 +92,20 @@ and its microtask checkpoint succeed. Native LVGL drawing/presentation occurs
 under the display lock afterward. Engine heap/stack, native allocations, assets,
 framebuffers and retained previous/candidate apps are different memory budgets.
 An engine memory limit alone does not contain all native failures.
+
+Trusted engine/binding setup is outside the untrusted execution checkpoint.
+Source compilation has a separate 250 ms soft bound, checked after the compiler
+returns; it is not a hard preemption guarantee. Initialization evaluation and
+each callback retain the 50 ms bound, 1,000 interrupt-check ceiling and
+64-microtask checkpoint. The host additionally enforces a process deadline.
+The separate compiler allowance addresses an observed 56.969 ms physical
+compilation during replacement; it does not enlarge app execution budgets.
+
+On ESP32-P4, QuickJS allocations and reallocations explicitly request byte-addressable
+PSRAM without falling back to internal RAM. Existing engine and allocator payload
+caps still apply, and candidate allocation failure does not replace the active application.
+This reserves internal RAM for native display/network work; actual replacement
+peak measurements, rather than total PSRAM capacity, determine admission.
 
 ## Trusted execution and agent tools
 

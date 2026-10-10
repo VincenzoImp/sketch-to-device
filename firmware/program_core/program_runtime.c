@@ -17,6 +17,7 @@
 #define REJECTIONS 16
 #define JOB_LIMIT 64
 #define DEADLINE_US 50000
+#define COMPILE_DEADLINE_US 250000
 typedef union { max_align_t align; struct { size_t size; } value; } allocation;
 typedef enum { CMD_CLEAR, CMD_RECT, CMD_LINE, CMD_TEXT, CMD_IMAGE } command_type;
 typedef struct {
@@ -62,7 +63,12 @@ static void *native_alloc(size_t n) {
 static void *js_alloc(void *opaque, size_t n) {
     pr_runtime *r = opaque;
     if (!n || n > PAYLOAD_LIMIT - r->payload || n > SIZE_MAX - sizeof(allocation)) return NULL;
-    allocation *a = malloc(sizeof(*a) + n); if (!a) return NULL;
+#ifdef ESP_PLATFORM
+    allocation *a = heap_caps_malloc(sizeof(*a) + n, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+#else
+    allocation *a = malloc(sizeof(*a) + n);
+#endif
+    if (!a) return NULL;
     a->value.size = n; r->payload += n; if (r->payload > r->peak) r->peak = r->payload;
     return a + 1;
 }
@@ -78,7 +84,12 @@ static void *js_resize(void *o, void *p, size_t n) {
     if (!p) return js_alloc(o, n); if (!n) { js_release(o,p); return NULL; }
     pr_runtime *r=o; allocation *a=(allocation *)p-1; size_t old=a->value.size;
     if (n>PAYLOAD_LIMIT-(r->payload-old) || n>SIZE_MAX-sizeof(*a)) return NULL;
-    a=realloc(a,sizeof(*a)+n); if (!a) return NULL;
+#ifdef ESP_PLATFORM
+    a=heap_caps_realloc(a,sizeof(*a)+n,MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+#else
+    a=realloc(a,sizeof(*a)+n);
+#endif
+    if (!a) return NULL;
     a->value.size=n; r->payload=r->payload-old+n; if(r->payload>r->peak)r->peak=r->payload; return a+1;
 }
 static size_t js_size(const void *p) { return p ? ((const allocation *)p-1)->value.size : 0; }
@@ -316,11 +327,11 @@ pr_runtime *pr_create_observed(const pr_program *p,pr_clock clock,uint32_t seed,
     if(!setup(r))goto fail;
     char *source=malloc(p->source_size+1);if(!source)goto fail;memcpy(source,p->source,p->source_size);source[p->source_size]=0;
     startup->setup_us=(uint64_t)(real_us()-start);startup->stage="compile";
-    start=checkpoint_begin(r);JS_SetInterruptHandler(r->engine,interrupt,r);
+    start=checkpoint_begin(r);r->deadline=start+COMPILE_DEADLINE_US;JS_SetInterruptHandler(r->engine,interrupt,r);
     JSValue compiled=JS_Eval(r->context,source,p->source_size,"app.js",JS_EVAL_TYPE_GLOBAL|JS_EVAL_FLAG_STRICT|JS_EVAL_FLAG_COMPILE_ONLY);free(source);
     startup->compile_us=(uint64_t)(real_us()-start);startup->compile_interrupts=r->interrupt_calls;
     if(JS_IsException(compiled)){diagnostic_pending(r,r->context);JS_FreeValue(r->context,compiled);if(!r->fault)r->fault="script_exception";goto fail;}
-    if(r->fault || startup->compile_us>=DEADLINE_US){r->fault="execution_budget";JS_FreeValue(r->context,compiled);goto fail;}
+    if(r->fault || startup->compile_us>=COMPILE_DEADLINE_US){r->fault="execution_budget";JS_FreeValue(r->context,compiled);goto fail;}
     startup->stage="evaluate";start=checkpoint_begin(r);
     /* EvalFunction consumes the compiled value even when execution throws. */
     JSValue result=JS_EvalFunction(r->context,compiled);bool ok=checkpoint_end(r,result);

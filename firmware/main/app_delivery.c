@@ -196,7 +196,9 @@ static int desired(deployment *out) {
 done:
     cJSON_Delete(root); return result;
 }
-/* Active receipt: 1 accepted, 0 explicitly stale, -1 unknown and retryable. */
+/* Active receipt: 1 latest intent or exact healthy active identity confirmed,
+ * 0 explicitly stale, -1 unknown and retryable. Legacy three-field replies
+ * remain supported; an additive confirmation never overrides identity checks. */
 static int ack(const deployment *d, const char *status, const char *error) {
     char body[768], response[4097]; size_t used;
     if (!token(CONFIG_SKETCH_DEVICE_ID,128)) return -1;
@@ -208,10 +210,13 @@ static int ack(const deployment *d, const char *status, const char *error) {
     if (strcmp(status,"active")) return 1;
     cJSON *root = protocol_json(response,used);
     int result = -1;
-    if (root && cJSON_IsObject(root) && cJSON_GetArraySize(root) == 3 &&
+    const cJSON *confirmed=item(root,"active_confirmed");
+    int fields=root?cJSON_GetArraySize(root):0;
+    if (root && cJSON_IsObject(root) &&
+        ((fields==3 && !confirmed) || (fields==4 && cJSON_IsBool(confirmed))) &&
         cJSON_IsBool(item(root,"recorded")) && cJSON_IsBool(item(root,"current_success")) &&
         string(root,"deployment_id") && !strcmp(string(root,"deployment_id"),d->deployment_id))
-        result = cJSON_IsTrue(item(root,"current_success")) ? 1 : 0;
+        result = cJSON_IsTrue(item(root,"current_success")) || cJSON_IsTrue(confirmed) ? 1 : 0;
     cJSON_Delete(root); return result;
 }
 static bool persist_blob(const char *key,const void *bytes,size_t size) {
