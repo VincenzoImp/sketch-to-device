@@ -1,5 +1,7 @@
 # Controlled implementation pipeline
 
+**Current direction:** the user paused implementation for the [whole-platform audit and unified release plan](16-final-platform-plan.md). That plan now owns the programmable release order. The gates below remain the original AppSpec pipeline and its historical evidence criteria; they do not override the new scope or authorize a probe during the pause.
+
 This is the implementation runbook for the one-shot creation demo. It does not record completed implementation. Implementation is now authorized; read current gate evidence and user steering before selecting the next task. All project artifacts, interfaces, prompts, identifiers, comments and demo material are in English.
 
 Read [session handoff](09-session-handoff.md) before resuming. Actual task/gate status and exclusive ownership are maintained in [the work ledger](12-work-ledger.md), not inferred from this schedule. [Readiness](11-readiness.md) identifies which prerequisites are resolved, tool-owned or externally blocked.

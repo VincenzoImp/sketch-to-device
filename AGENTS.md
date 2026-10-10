@@ -2,6 +2,8 @@
 
 ## Objective and current phase
 
+**Latest user steering (10 October, after the Flappy Bird refusal): pause implementation and physical probes, audit the whole project, and prepare one coherent programmable release plan.** [The audited release plan](docs/16-final-platform-plan.md) owns the next scope and sequence. The current task is audit, reconciliation and reviewed checkpoint preparation/publication; completing those does not itself resume feature work or flashing. Reconcile any subsequent user instruction before resuming. Earlier general implementation authorization below remains durable but does not override this pause.
+
 Read [README.md](README.md), [session handoff](docs/09-session-handoff.md), [current status](docs/00-status.md), and relevant linked documents before working. Build toward this outcome: one prompt from an Android phone → a Gemini agent using real tools → a validated app package → an interactive app installed on the Waveshare ESP32-P4-WIFI6-Touch-LCD-3.5. Use Google DeepMind and Gradium substantively. The user has explicitly requested subagents and iterative verification.
 
 The user has now authorized implementation and practical integration probes as well as context enrichment and public GitHub publication. Follow [the execution plan](docs/05-execution-plan.md) toward the real end-to-end outcome, updating it from observed progress. Necessary installations, configuration, reversible fixes and milestones need no renewed permission. Environment restrictions still apply; progress on independent work while recording concrete blockers. Do not build substantial integration-dependent code on untested assumptions.

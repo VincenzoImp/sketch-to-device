@@ -14,7 +14,7 @@ const errors = {
   generation_busy:'An app is already being built. Please wait for it to finish.',
   generation_stalled:'The app builder repeated the same failed result. Your current app is unchanged. Try describing what should happen differently.',
   input_required:'Describe your app or add a recording.',
-  unsupported_request:'This idea needs features the current app format cannot provide. Try screens with text, buttons, counters, toggles or timers.',
+  unsupported_request:'This idea needs features that are not available on your device yet. Retrying the same request will not add them. Your current app is still available.',
   unsupported_or_oversized_media:'Choose a supported image or recording up to 20 MiB.',
   invalid_body_size:'This upload is empty or too large. Choose a file up to 20 MiB.',
   incomplete_upload:'The upload was interrupted. Check your connection and try again.',
@@ -110,11 +110,13 @@ $('#record').onclick = async () => {
   } catch (_) { if (captureStream) captureStream.getTracks().forEach(track => track.stop()); showError('Microphone access was unavailable. Add a recording or type your idea.'); }
 };
 function progress(stage, detail, deployment, diagnostics) {
-  const titles = {preparing:'Preparing your idea',uploading:'Sending your sketch',transcribing:'Listening to your idea',understanding:'Reading your sketch',generating:'Building your app',repairing:'Improving your app',validating:'Checking the app',simulating:'Trying the app',ready:'On its way to your device',active:'Your idea is alive.',failed:'This attempt needs another try',superseded:'A newer idea is being built'};
-  $('#progress').hidden = false; $('#progress-title').textContent = titles[stage] || 'Working on your app';
-  $('#progress-detail').textContent = stage === 'failed' ? failureMessage(detail, diagnostics?.reason) : detail || ''; $('#progress-label').textContent = stage === 'active' ? 'RUNNING ON YOUR DEVICE' : 'MAKING YOUR APP';
+  const titles = {preparing:'Preparing your idea',uploading:'Sending your sketch',transcribing:'Listening to your idea',understanding:'Reading your sketch',generating:'Building your app',repairing:'Improving your app',validating:'Checking the app',simulating:'Trying the app',ready:'On its way to your device',active:'Your idea is alive.',failed:'Your app could not be created',superseded:'A newer idea is being built'};
+  const unsupported = stage === 'failed' && detail === 'unsupported_request';
+  $('#progress').hidden = false; $('#progress-title').textContent = unsupported ? 'This idea is not supported yet' : titles[stage] || 'Working on your app';
+  $('#progress-detail').textContent = stage === 'failed' ? failureMessage(detail, diagnostics?.reason) : detail || '';
+  $('#progress-label').textContent = unsupported ? 'NOT SUPPORTED YET' : stage === 'failed' ? 'APP NOT CREATED' : stage === 'active' ? 'RUNNING ON YOUR DEVICE' : 'MAKING YOUR APP';
   const phase = ['ready','active'].includes(stage) ? 2 : ['generating','repairing','validating','simulating'].includes(stage) ? 1 : 0;
-  [...$('#steps').children].forEach((step, index) => { step.classList.toggle('done', index < phase || stage === 'active'); step.classList.toggle('current', index === phase && stage !== 'active'); });
+  [...$('#steps').children].forEach((step, index) => { step.classList.toggle('done', index < phase || stage === 'active'); step.classList.toggle('current', index === phase && !['active','failed','superseded'].includes(stage)); });
   $('#identity').textContent = deployment ? `${deployment.manifest.app_id} · v${deployment.manifest.version} · ${deployment.manifest.sha256.slice(0,12)}` : '';
 }
 const pause = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));

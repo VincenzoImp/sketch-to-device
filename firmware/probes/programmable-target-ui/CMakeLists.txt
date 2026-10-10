@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.16)
+get_filename_component(WORKSPACE "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
+set(EXTRA_COMPONENT_DIRS "${WORKSPACE}/.tools/quickjs-probe/quickjs-ng")
+foreach(component espressif__cmake_utilities espressif__esp_codec_dev espressif__esp_lcd_st7796 espressif__esp_lcd_touch espressif__esp_lcd_touch_ft5x06 espressif__esp_lvgl_adapter lvgl__lvgl waveshare__esp32_p4_wifi6_touch_lcd_3_5)
+    list(APPEND EXTRA_COMPONENT_DIRS "${WORKSPACE}/firmware/managed_components/${component}")
+endforeach()
+set(COMPONENTS main)
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+project(programmable_target_ui)
+# Mirror the pinned BSP manifest's dependency edges without a registry request.
+idf_component_get_property(bsp_lib waveshare__esp32_p4_wifi6_touch_lcd_3_5 COMPONENT_LIB)
+target_link_libraries(${bsp_lib} PUBLIC idf::espressif__esp_codec_dev idf::espressif__esp_lvgl_adapter idf::lvgl__lvgl)
+target_link_libraries(${bsp_lib} PRIVATE idf::espressif__esp_lcd_st7796 idf::espressif__esp_lcd_touch_ft5x06)

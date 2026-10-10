@@ -1,6 +1,6 @@
 # Acceptance checks and live demo
 
-These checks define complete-product acceptance. The [work ledger](12-work-ledger.md) records partial evidence, including actual managed generation and the user-confirmed built-in tap app on the physical board. Neither establishes the complete Android-to-device flow. The priority is one new input producing one real interactive app, with Google DeepMind and Gradium used substantively.
+These checks define the original AppSpec demonstration acceptance. **The user has paused implementation for the [whole-platform audit and programmable release plan](16-final-platform-plan.md); its six-app matrix and common recovery/operations gates now define the expanded release.** Retain the checks below as compatibility and original-demo criteria, not a tap-game-only definition of the finished platform. The [work ledger](12-work-ledger.md) records actual voice, photo-only and Hello Colors physical evidence and their remaining limitations.
 
 ## Required product evidence
 

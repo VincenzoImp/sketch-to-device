@@ -2,23 +2,25 @@
 
 ## One-minute state
 
-The user wants one Android request to create and install an app on the physical Waveshare device. The demo works for two separate generated games: voice sequence6Rocket Tata (including ordinary reboot) and photo-only sequence7Star Tap. The voice title was misrecognized; photo-only did not include the proposed20-second narration. Two later color-button jobs failed at the provider and left Star Tap active. Exact evidence and limits live in [the ledger](12-work-ledger.md).
+**Latest instruction: stop implementation/probing, audit the whole platform, and plan one coherent final release.** The user explicitly expects Snake, Flappy Bird, calculator, clock, stopwatch and uploaded-image whack-a-mole. [The audit and release plan](16-final-platform-plan.md) owns the next implementation sequence; [platform exploration](15-programmable-apps.md) remains research/probe history.
 
-**Current correction:** the user expected real app programming with useful documentation, web research, graphics/assets and broad device features, not a fixed5-widget/7-action language. They explicitly request pragmatic feasibility checks, preservation of this direction and frequent public commits. [Programmable platform](15-programmable-apps.md) supersedes the old permanent-DSL boundary. The selected first experiment is official QuickJS-NG0.14.0, preserving IDF5.5.5/BSP/LVGL and existing apps. The isolated engine works on the host and cross-compiles for P4; no programmable app runtime is integrated or deployed yet.
+The production runtime is still AppSpec0.2. Voice Rocket Tata worked and survived reboot; separate photo-only Star Tap worked. After a coordinated service restart/firmware flash, fresh Hello Colors sequence12 reached exact activation and user-confirmed color cycling. The following Flappy request returned unsupported and preserved Hello Colors. This is an architectural limitation, not a reason to repeat the prompt. No generated JavaScript has been delivered or run on the physical device.
 
-Local source includes tested0.2button colors, expanded normalized media, reviewed provider diagnostics/timing and an incremental publisher. Agent SDK/skills, web-tool declarations and an isolated engine probe are implemented in source. The source runtime0.2binary has compiled but is not flashed; the current service/device still represent the previous accepted baseline. QuickJS source verification is resolved; actual host resource tests and isolated target build passed. Do not ask for another download.
+The accepted QuickJS engine/UI host proofs and isolated P4 builds establish feasibility. They do not include production packages, general timing/drawing/images, durable callback-failure recovery or physical resource measurements. The public target build reproduction is independently accepted; the partial ignored physical-flash helper is parked, unreviewed and must not run.
 
-The latest public checkpoint is verified at [GitHub](https://github.com/VincenzoImp/sketch-to-device), commit 4d465e922b542404a6429e35d8c6532035f660ad with 144 audited files and the initial commit preserved. Later edits are not automatically committed. Managed Git metadata remains read-only and network/serial restricted despite user authorization; [readiness](11-readiness.md) owns those facts. The reviewed checkpoint helper needs a normal-Terminal execution only after a coherent public slice is ready.
+Flash-Lite is the restarted service's selected source default, with200k tokens/600seconds. The same-input comparison passed exact behavior in40.007seconds versus139.112seconds for Flash. The new audit also identified missing installed-device SDK selection, insufficient remote checker attestation, overwritten per-job traces and late-failure/current-health reporting. Existing backend AppSpec validation and role-separated transport remain useful and should be preserved.
+
+Latest verified public checkpoint: [35e8d69](https://github.com/VincenzoImp/sketch-to-device/commit/35e8d69267ff5fea5b7c85cfbf0ced2813c72fb9),144files with earlier history intact. Later local work is unpublished. Git metadata remains read-only and network/serial restricted despite authorization; [readiness](11-readiness.md) records the actual boundary.
 
 ## Next actions
 
-1. Check time, tools and active ownership in [the ledger](12-work-ledger.md). Preserve the working service, endpoint, hotspot and saved app.
-2. Continue from the passed engine/resource/P4-build gates and real host QuickJS/LVGL UI proof. Package delivery, timers, native allocation failure and target UI execution still need implementation/evidence. Keep difficult platform migrations separate from the working demo.
-3. Coherently activate the accepted source: the same-input live comparison passed exact color-cycle behavior with Flash-Lite in 40.007 seconds and Flash in 139.112 seconds. Flash-Lite is now the reviewed source default. Earlier documentation-read loops motivated the early runnable-draft guidance; the comparison completed with real execution. The lookup prohibition is already removed in source. Image-generation/custom-function research is complete; a broker and device asset path remain further implementation. Do not advertise APIs the device cannot execute.
-4. Reconcile source contracts/tests/docs, audit public files and publish reviewed checkpoints with verified remoteSHA. Keep private media/configuration out of the public tree.
-5. Activate a coherent tested slice before a fresh live request. Remaining product gates include combined photo+voice, intent/reference fidelity, physical fault recovery and rehearsal. Ordinary reboot and a second generated app already have evidence; do not repeat them as missing setup.
+1. Preserve the running service, endpoint, hotspot, current app and exact verified0.2 restore image. No new generation, restart or flash is needed for this audit.
+2. The [unified plan](16-final-platform-plan.md) passed hardware, agent and final cold-start review; public context checks passed158 files. Publish the reviewed checkpoint through the existing authorized helper; normal-Terminal execution is needed for the unavailable Git/network operation.
+3. When implementation resumes, start at milestone0: freeze SDK/package/lifecycle contracts and prove a real same-engine checker tool route, either managed execution or a registered trusted backend function. Do not assume macOS/P4 binaries run in the managed Linux environment.
+4. Build one generated calculator through the production lifecycle and exact recovery reporting. Then implement common time/input/canvas/assets and run all six fresh request cases plus an unseen composition. No app-specific firmware handlers or another series of AppSpec-only patches.
+5. Complete physical fault/reconnect/compatibility and resource tests, fresh combined photo+voice, correlated timings, stable endpoint setup and rehearsal before declaring the release ready. Camera/audio services are separate follow-on gates, not implied capabilities.
 
-The event and prior17:00ready-by target are on10October2026, Europe/Zurich. The user says there is time for this correction but explicitly asks for pragmatism. Check actual time and scope instead of enforcing an old self-imposed feature freeze or promising an unmeasured migration deadline.
+The old17:00 target and event19:00 opt-in/20:00 demos are scheduling inputs, not evidence that this migration can fit them. The hardware-lane estimate alone is11–22 focused engineer-hours; backend broker/hosting work remains unsized. Keep the existing demonstrated flow available and state the actual scope honestly.
 
 ## Read by responsibility
 
@@ -38,7 +40,7 @@ The event and prior17:00ready-by target are on10October2026, Europe/Zurich. The 
 - [Product](02-product.md): intended user experience, P0/P1/P2 and completion scope.
 - [Architecture](03-architecture.md): component responsibilities and transport design.
 - [Contracts](04-contracts.md): authoritative limits, field names and runtime semantics.
-- [Pipeline](05-execution-plan.md): gate definitions and repair strategy; [work ledger](12-work-ledger.md): actual gate state and owner.
+- [Release plan](16-final-platform-plan.md): current audited programmable scope and implementation order; [pipeline](05-execution-plan.md): legacy gate definitions and repair strategy; [work ledger](12-work-ledger.md): actual gate state and owner.
 - [Decisions](10-decisions.md): origin, rationale and decision status; [readiness](11-readiness.md): access, physical actions and environment constraints.
 - [Sources](07-sources.md) and research notes: evidence behind technical choices, not proof of integration.
 - [Agent prompts](08-agent-prompts.md): handoff templates; they do not supersede contracts or execute a run by themselves.

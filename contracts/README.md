@@ -5,7 +5,7 @@ This directory freezes the initial host contract and two hand-authored acceptanc
 The [canonical contract](../docs/04-contracts.md) owns product and transport behavior. The files here make its AppSpec subset executable:
 
 - [app.schema.json](app.schema.json): Draft 2020-12 structural schema, version 1.
-- [runtime-capabilities.json](runtime-capabilities.json): runtime 0.1.0 limits, geometry, palettes and layout budget.
+- [runtime-capabilities.json](runtime-capabilities.json): runtime 0.2.0 limits, geometry, palettes, optional button color and layout budget, retaining legacy0.1 packages.
 - [Tap Sprint](fixtures/tap-sprint.json) and [Focus Timer](fixtures/focus-timer.json): distinct data packages; they are not generated-app evidence.
 - [Tap Sprint scenario](scenarios/tap-sprint.json) and [Focus Timer scenario](scenarios/focus-timer.json): data-only traces with explicit expected outcomes.
 - [Trusted validator](../runtime/validation.py), [reference state machine](../runtime/reference.py), [scenario runner](../runtime/scenarios.py) and [acceptance tests](../tests/test_contracts.py).
@@ -20,16 +20,16 @@ python3 -m runtime.check contracts/fixtures/tap-sprint.json --scenario contracts
 python3 -m runtime.check contracts/fixtures/focus-timer.json --scenario contracts/scenarios/focus-timer.json
 ```
 
-The CLI returns a JSON report and exit status 0 only if its requested checks pass. Failure returns status 1. Its SHA-256 and size identify the exact supplied bytes, including whitespace. Reports explicitly say `host_validation_only`; they contain no device acknowledgment. A future backend must run this trusted validator after assigning publication fields and validate the exact bytes it serves.
+The CLI returns a JSON report and exit status 0 only if its requested checks pass. Failure returns status 1. Its SHA-256 and size identify the exact supplied bytes, including whitespace. Reports explicitly say `host_validation_only`; they contain no device acknowledgment. The implemented backend runs this trusted validator after assigning publication fields and validates the exact bytes it serves.
 
 `parse_app(bytes)` is the untrusted-input entry point. It checks the 65,536-byte and twelve-container limits before decoding an object tree, rejects duplicate keys and non-integer number syntax, then checks structure, typed references, aggregate limits, structural reachability and layout. `validate_app(dict)` assumes the parser already checked byte/depth/duplicate-key constraints. No generic JSON Schema engine is required or bundled. The JSON Schema is a structural interchange artifact; it cannot express every semantic constraint. In particular, JSON Schema's mathematical integer concept can admit `1.0`, while the strict parser rejects fractional/exponent tokens. Both checks are required when another implementation consumes the schema.
 
 ## Selected v1 rendering budget
 
-These are conservative design choices awaiting a measured LVGL implementation. `physical_layout_verified` is false. Before G2, verify the actual installed font, character wrapping, glyph bounds, control hit areas and shell geometry on the device; change the shared capability contract if they cannot be honored.
+These are conservative layout bounds implemented by the LVGL renderer. Individual generated apps have physical evidence, but the full boundary matrix is not physically qualified: `physical_layout_verified` remains false. Verify worst-case font/wrapping/glyph bounds, hit areas and shell geometry before claiming all accepted layouts render correctly.
 
 - Full display: 320 by 480 portrait. The firmware shell reserves the top 48 pixels. App viewport: origin `(0,48)`, size 320 by 432.
-- Theme: exactly `palette` (`dark_green` or `light_blue`) and `font_size` (`medium`). Color values are in the capability JSON. No custom colors or font sizes.
+- Theme: exactly `palette` (`dark_green` or `light_blue`) and `font_size` (`medium`). Runtime0.2 additionally accepts an optional button `background_color` in `#RRGGBB` form, selecting black/white text for contrast; it does not enable arbitrary styles or font sizes.
 - Supported display text: nonempty printable ASCII U+0020 through U+007E. This deliberately uses a narrower subset than general Latin. Unsupported text fails; it is never silently transliterated. Names have at most 48 characters; other text has at most 120.
 - The `medium` font must have size at most 16 pixels, glyph advance at most 16 pixels and a 24-pixel line box. Every line uses fixed character-column wrapping, including spaces, without clipping, scrolling or implicit ellipsis.
 - App padding is 16 pixels on every side; title comes first. Each widget has an 8-pixel gap before it. Title/label width is 288 pixels, hence at most 18 characters per line under this budget.
