@@ -1,5 +1,10 @@
-idf_component_register(SRCS "main.c" "app_spec.c" "app_ui.c" "app_delivery.c" "tls_diagnostics.c"
-    INCLUDE_DIRS "." REQUIRES json esp_timer nvs_flash esp_http_client esp_netif esp_event esp_wifi mbedtls)
+idf_component_register(SRCS "main.c" "app_spec.c" "app_package.c" "app_ui.c" "app_delivery.c" "tls_diagnostics.c"
+    "../program_core/program_runtime.c" "../program_core/program_package.c"
+    INCLUDE_DIRS "." "../program_core"
+    PRIV_REQUIRES esp_app_format
+    REQUIRES quickjs-ng json esp_timer esp_psram nvs_flash esp_http_client esp_netif esp_event esp_wifi mbedtls)
+set_source_files_properties("../program_core/program_runtime.c" "../program_core/program_package.c"
+    PROPERTIES COMPILE_OPTIONS "-Wno-misleading-indentation")
 target_add_binary_data(${COMPONENT_LIB} "../../contracts/fixtures/tap-sprint.json" TEXT)
 execute_process(COMMAND "${PYTHON}" -c "import time; print(int(time.time()))"
     OUTPUT_VARIABLE SKETCH_BUILD_EPOCH OUTPUT_STRIP_TRAILING_WHITESPACE

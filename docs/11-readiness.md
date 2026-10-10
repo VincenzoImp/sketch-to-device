@@ -1,31 +1,25 @@
 # Access and readiness register
 
-Updated: 10 October 2026. Authorization and actual tool access are separate. The user wants autonomous work with questions only when an unavailable operation or physical observation requires them.
+Updated: 10 October 2026, stabilization under D32. Back up the installed Penguin Tap first, publish the reviewed checkpoint, then fix remaining bugs before the user performs a fresh end-to-end test. The backup is complete and independently accepted.
 
 ## Current conditions
 
 | ID | Observed condition | Next action |
 | --- | --- | --- |
-| R01 providers | Private keys exist; actual voice/photo generation passed. Root's real managed custom-function continuation and155.090second fresh source/image generation passed independent checks; an older worker still has DNS restrictions | Root executes live calls. Corrected route passed review but actual POST returned404; GET still reports requires_action. Remote termination is unconfirmed. Physical generated-code delivery remains open |
-| R02 physical board | ESP32-P4rev3.2/16MiB; backup verified. Touch, generated apps and ordinary reboot of voice app passed | Preserve storage/current app; programmable engine/peripherals and fault recovery need their own physical evidence |
-| R03 companion | Android site, recording, upload and exact installed confirmation passed | Reviewed programmable backend is now running on the refreshed private QR/HTTPS endpoint. Firmware private endpoint was updated without changing hotspot or identity; new device capability/physical proof remains pending |
-| R04 network | Android cellular hotspot resolved captive-portal connection issue; device HTTPS works | Preserve hotspot credentials. Do not ask for them again or disable certificate checks |
-| R05 managed permissions | Earlier Git/network failures are historical. Current full-access profile enables filesystem/network; direct publication and remote verification passed | Execute authorized operations directly. Check actual serial/provider access when needed; do not infer their success from Git access |
-| R06 public repository | Reviewed190-file implementation checkpoint d11b72be89a806958c8d01312d91ed4c66f8001e verified at [GitHub](https://github.com/VincenzoImp/sketch-to-device) | Periodic public commits are required. Reviewed [checkpoint helper](../scripts/checkpoint_github.py) audits, commits/pushes without force and verifies remote identity; new local work remains unpublished until it succeeds |
-| R07 tested source vs deployed source | Runtime0.2color extension passed host/native review and was flashed after the service restart/new endpoint update | Fresh Hello Colors sequence12 exact ACK and physical color cycling passed; exact flashed image is privately frozen. Flappy refusal preserved it. New integration/physical probes resume under D30 after their dependencies and review pass |
-| R08 programmable engine | Shared QuickJS-NG0.14/LVGL core, strict schema2 parser and host CLI passed sanitizer/lifecycle/frame tests and independent review; full standard P4 owner-integration build passed | Later recovery/delivery changes need a new reviewed build; capability-aware activation, resource headroom and physical execution/recovery remain separate gates |
-| R09 onsite delivery | Organizer opt-in mechanism/submission URL/pitch duration not established by supplied material | Check actual organizer directions when needed; no invented submission completion |
+| R01 providers | Private keys and real Gradium/Gemini calls work. Managed Gemini authored ordinary JavaScript and used trusted custom tools | Resolve supersession/cleanup and improve observed repair-loop feedback. Actual cancellation returned 404; remote termination is unconfirmed |
+| R02 physical board | ESP32-P4 rev3.2/16 MiB; original backup, runtime 0.2 restore image and app-storage snapshot retained | Preserve installed Penguin Tap and its new exact private backup; measure JavaScript resource/replacement behavior |
+| R03 companion | Mac/Android HTTPS companion works; earlier recording/upload/exact installation confirmation passed | Fresh programmable one-action run and user gameplay remain to prove after stabilization |
+| R04 network | Device HTTPS works through Android cellular hotspot; event Wi-Fi has a captive portal | Preserve credentials and certificate verification. Current endpoint is in private service configuration |
+| R05 permissions | Full filesystem/network access, direct publication and serial operations passed | Execute authorized operations directly; ask only for unavailable physical observations or newly demonstrated access failures |
+| R06 public repository | Verified 202-file checkpoint 4c3f12e8c273e4fc2cc7f8108f55af861a4ac389 at [GitHub](https://github.com/VincenzoImp/sketch-to-device) | Publish the independently accepted firmware slice and current documentation using the audited checkpoint helper; subsequent results belong in the ledger |
+| R07 deployed firmware | Runtime 0.3.0 with independently reviewed activation-race fix is flashed; binary SHA256 7d6aeb02f6ae827089fa14ef119af28c6ed9bd9dcce11f24139129f030834a96 | Exact configured binary is privately saved; never publish it. Current capability report matches the built ELF |
+| R08 programmable app | Penguin Tap v3, sequence 19 reached exact active acknowledgment after trusted execution and unchanged source/assets reuse from Gemini's sequence 17 | This establishes activation, not physical touch/gameplay, reboot, general recovery or fresh one-shot generation. Those observations remain open |
+| R09 event delivery | Submission destination and actual organizer submission are not established | Do not claim submission. The latest user has removed the immediate time constraint and requested stabilization |
 
-Private Wi-Fi/account material stays in ignored configuration. Current firmware may seed time from a trusted local build timestamp while attempting SNTP; successful TLS is not proof of synchronized clock accuracy.
+## Human involvement and acceptance
 
-## Human-only involvement
+No new key, network credential, board identity or setup permission is needed. The user will supply the next real app request and test the resulting app. The assistant owns backup, publication, diagnosis, implementation and appropriate checks.
 
-No new product explanation, account key, board model, phone platform or setup authorization is required. Human involvement is limited to physical interaction/observation, an actual account login, organizer details only available onsite, or an operation newly demonstrated to be unavailable through tools. The assistant owns research, implementation, local tests, dependency preparation and documentation.
+Earlier schema 1 voice Rocket Tata, photo-only Star Tap and text Hello Colors have physical behavior evidence. Programmable gameplay/reboot, combined photo+voice, interrupted installation, repeated requests and broader fidelity are separate gates. Camera, microphone and speaker remain unavailable to generated apps until native APIs and physical checks exist.
 
-The source download is resolved; no further fetch is needed. The reviewed service restart and runtime0.2 flash have completed. The reviewed model comparison completed: both exact behaviors passed; Flash-Lite took40.007seconds versus139.112seconds for Flash on this one task. Flash-Lite is selected in the restarted service source; fresh Hello Colors passed exact activation and physical behavior. The following Flappy request demonstrated the current format limitation. Current work implements the [full-chain redesign plan](16-final-platform-plan.md) under D30; preserve the existing demo while proving the new pipeline. The user supplies the later prompt/image, and Gemini must author the app.
-
-## Remaining acceptance dependencies
-
-Voice Rocket Tata, photo-only Star Tap and text Hello Colors have physical behavior evidence; a second app is no longer a missing gate. Fresh combined photo+voice, faithful arbitrary small requests, interrupted-install/previous-app recovery, multiple repeat runs and rehearsal remain open. Programmable execution, graphics assets and peripheral services are new gates, not capabilities implied by the existing touchscreen success.
-
-Record observable results, environment, owner and the smallest next action. Distinguish credentials failure from a call blocked before the provider. [The ledger](12-work-ledger.md) owns command/result history and [the audited release plan](16-final-platform-plan.md) owns the next implementation order. The earlier [platform exploration](15-programmable-apps.md) retains alternative/probe evidence.
+The private Penguin backup contains the exact package/source, configured firmware, manifest and consistent database snapshot. Recovery must retain fresh deployment/version identity and validation; never overwrite the live database or clear quarantine to force success. See [the ledger](12-work-ledger.md) for evidence and [the release plan](16-final-platform-plan.md) for implementation gates.

@@ -2,15 +2,15 @@
 
 Operating context for the Agentic AI Hack Zürich on October 10, 2026. Turn a short description or a narrated sketch into an interactive app on a Waveshare ESP32-P4 device. Working project name.
 
-**Current phase: implement the reviewed programmable generation platform.** The user will supply the prompt and image; Gemini must author the app, without prepared game templates or coordinator-written substitutes. [The revised platform plan](docs/16-final-platform-plan.md) defines the rewrite, SDK, Google AI Studio/Pi assessment and staged proofs. The user has activated implementation of that plan (D30); new capabilities require their own practical proofs. Production remains AppSpec0.2: voice, photo-only and Hello Colors worked physically; Flappy Bird exposed its limitations. A plan or compiled probe is not a deployed capability.
+**Current phase: stabilize the programmable generation flow.** Gemini authors ordinary JavaScript apps from user input, without prepared game templates or coordinator-written substitutes. Runtime 0.3 is flashed and connected; the generated Penguin Tap has an exact active device acknowledgment after a reviewed activation fix. Its physical gameplay and a fresh one-action programmable run still need user verification. Earlier voice, photo-only and text AppSpec apps worked physically. See [current status](docs/00-status.md) and [the release plan](docs/16-final-platform-plan.md) for evidence and limits.
 
 ## Primary experience
 
-On an Android phone, the user supplies one prompt, optionally with a sketch, voice recording, or short video, then taps **Generate and install** for an already paired device. Gradium handles the spoken input. Gemini interprets the request, uses tools to build and validate an application package, and sends it to the device. After the device acknowledges the exact installed version, the user can interact with the app on its touchscreen.
+On an Android phone, the user supplies text, images, a voice recording or short video, alone or in combination, then taps **Generate and install** for an already paired device. Gradium handles the spoken input. Gemini interprets the request, uses tools to build and validate an application package, and sends it to the device. After the device acknowledges the exact installed version, the user can interact with the app on its touchscreen.
 
 This action authorizes the reversible installation of the validated package. Transcript confirmation, preview approval, and another chat turn are not required. An optional preview can show progress; conversational revisions are a later enhancement. A candidate live demonstration is a simple 10-second tap game generated from one English prompt.
 
-The implemented firmware is a reusable ESP-IDF/LVGL runtime for the **Waveshare ESP32-P4-WIFI6-Touch-LCD-3.5**. It currently executes a bounded JSON AppSpec, without compiling firmware for each app. This format has real expressive limits: it is not arbitrary application programming. Isolated QuickJS-NG engine and real LVGL UI probes now pass host checks, and the isolated UI adapter cross-compiles for P4. A versioned production UI/device SDK and physical integration remain the next gates. Existing apps remain supported during that work. Camera, microphone and speaker APIs for generated apps are not implemented yet.
+The implemented firmware is a reusable ESP-IDF/LVGL runtime for the **Waveshare ESP32-P4-WIFI6-Touch-LCD-3.5**. Runtime0.3 supports schema1 AppSpec and separately versioned schema2 JavaScript packages without compiling firmware for each app. The shared QuickJS-NG/LVGL runtime, SDK, owner lifecycle and delivery integration pass host checks and the full P4 build. The flashed runtime has activated a Gemini-authored JavaScript app. Physical gameplay, ordinary reboot and fresh full-flow repeatability remain separate checks. Camera, microphone and speaker APIs for generated apps are not implemented yet.
 
 ## Read in this order
 
@@ -34,7 +34,7 @@ Research: [hardware](docs/research/hardware.md), [Gemini](docs/research/gemini.m
 
 The [versioned agent SDK](agent-sdk/README.md) packages consultable API references, managed-agent instructions/skills and runnable examples for the currently implemented runtime. The [platform exploration](docs/15-programmable-apps.md) records alternatives/probes; the [release plan](docs/16-final-platform-plan.md) reconciles the audit and defines the shared capability and acceptance gates.
 
-The new [programmable SDK](agent-sdk/program-v1/README.md) and [shared native core](firmware/program_core/README.md) are separate implementation candidates. Their source and host checks do not advertise availability on the currently installed device.
+The [programmable SDK](agent-sdk/program-v1/README.md) and [shared native core](firmware/program_core/README.md) expose canvas, input, time and packaged images. Generation uses the paired device's fresh capability report to select compatible packages.
 
 ## Setup on the tested Mac and board
 
@@ -72,7 +72,7 @@ Have Apple command-line tools, Git, cloudflared, and FFmpeg/FFprobe installed fi
 
 4. Open the private QR on Android, provide an English concept or recording, and tap **Generate and install** once. Confirm the exact installation state and test the physical app. Keep the Mac service/tunnel and hotspot running.
 
-For later firmware/configuration updates, use `--flash-runtime` without the initialization flag. A launcher restart can change the public endpoint: provision against the new running service while preserving network/device identity, then rebuild/flash before expecting delivery. Ordinary app generation installs an AppSpec package without flashing firmware. See [readiness](docs/11-readiness.md) before repeating setup in an existing workspace.
+For later firmware/configuration updates, use `--flash-runtime` without the initialization flag. A launcher restart can change the public endpoint: provision against the new running service while preserving network/device identity, then rebuild/flash before expecting delivery. Ordinary app generation installs an app package without flashing firmware. See [readiness](docs/11-readiness.md) before repeating setup in an existing workspace.
 
 ## Current executable foundation
 
@@ -87,7 +87,7 @@ python3 -B -m runtime.check contracts/fixtures/tap-sprint.json --scenario contra
 
 The [backend](backend/README.md) contains the HTTP service, deployment store and managed generation worker; the [companion](companion/README.md) supplies the mobile flow. The [firmware](firmware/README.md) contains the C runtime and LVGL renderer. Voice sequence6 (Rocket Tata) and photo-only sequence7 (Star Tap) received exact active acknowledgments and user-confirmed physical behavior. A later Hello World color request failed at the provider without replacing Star Tap; its precise cause is not established. Fresh combined photo+voice, interrupted-install recovery and broader fidelity remain separate acceptance work.
 
-The reviewed update adds button colors, input normalization, larger media bounds and phase timing. The service was restarted and runtime0.2 flashed on10October. Fresh Hello Colors reached exact sequence12 activation and user-confirmed color cycling. The following Flappy Bird request was refused as unsupported and preserved that app. The new programmable engine remains a separate feasibility probe, not part of that production firmware.
+The reviewed update adds button colors, input normalization, larger media bounds and phase timing. The service was restarted and runtime0.2 flashed on10October. Fresh Hello Colors reached exact sequence12 activation and user-confirmed color cycling. The following Flappy Bird request was refused as unsupported and preserved that app. That is historical runtime0.2 evidence. Runtime0.3 is now flashed; Penguin Tap has exact active acknowledgment; physical gameplay/reboot and a fresh one-action run remain open.
 
 The selected partners are **Google DeepMind and Gradium**. Entire is optional and parked. All project artifacts, UI, code comments, agent prompts, and demo material must be in **English**; the conversation with the user remains in Italian.
 

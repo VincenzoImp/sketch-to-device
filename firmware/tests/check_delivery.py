@@ -1,25 +1,26 @@
-"""Exercise actual delivery C logic with synthetic storage/transport boundaries."""
-import re
+#!/usr/bin/env python3
+"""Build and run the actual delivery C state machine with sanitizers.
+
+Transport, persistence fault injection and UI commands are synthetic boundaries;
+package decoders and cryptographic hashes are the real shared implementations.
+No network, serial access or firmware modification occurs.
+"""
+import shutil
 import subprocess
-import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-CJSON = ROOT / ".tools/esp-idf-v5.5.5/components/json/cJSON"
-with tempfile.TemporaryDirectory(prefix="sketch-delivery-") as directory:
-    work = Path(directory)
-    source = (ROOT / "firmware/main/app_delivery.c").read_text()
-    for name in re.findall(r'#include "([^"]+)"', source):
-        if name in ("app_delivery.h", "app_ui.h", "cJSON.h"):
-            continue
-        stub = work / name
-        stub.parent.mkdir(parents=True, exist_ok=True)
-        stub.write_text("/* Synthetic host boundary; never used by firmware builds. */\n")
-    shared = ["clang", "-std=c11", "-g", "-fsanitize=address,undefined", "-I" + str(work),
-              "-I" + str(CJSON), "-I" + str(ROOT / "firmware/main")]
-    subprocess.run(shared + ["-Wno-deprecated-declarations", "-c", str(CJSON / "cJSON.c"), "-o", str(work / "json.o")], check=True)
-    subprocess.run(shared + ["-Wall", "-Wextra", "-Werror", "-Wno-deprecated-declarations",
-                   str(ROOT / "firmware/tests/delivery_test.c"), str(ROOT / "firmware/main/app_spec.c"),
-                   str(work / "json.o"), "-o", str(work / "delivery")], check=True)
-    subprocess.run([str(work / "delivery"), str(ROOT / "contracts/fixtures/tap-sprint.json"),
-                    str(ROOT / "contracts/fixtures/focus-timer.json")], check=True)
+BUILD = ROOT / ".tools/app-ui-host"
+CMAKE = ROOT / ".tools/espressif/tools/cmake/3.30.2/CMake.app/Contents/bin/cmake"
+NINJA = ROOT / ".tools/espressif/tools/ninja/1.12.1/ninja"
+cmake = str(CMAKE) if CMAKE.is_file() else shutil.which("cmake")
+ninja = str(NINJA) if NINJA.is_file() else shutil.which("ninja")
+if not cmake or not ninja:
+    raise SystemExit("Local CMake and Ninja are required")
+subprocess.run([cmake, "-S", str(ROOT / "firmware/tests/ui-host"), "-B", str(BUILD),
+                "-G", "Ninja", "-DCMAKE_MAKE_PROGRAM=" + ninja,
+                "-DCMAKE_BUILD_TYPE=Debug"], check=True, timeout=45)
+subprocess.run([cmake, "--build", str(BUILD), "--target", "app_delivery_test",
+                "app_ui_test", "-j8"], check=True, timeout=180)
+for name in ("app_delivery_test", "app_ui_test"):
+    subprocess.run([str(BUILD / name)], check=True, timeout=30)

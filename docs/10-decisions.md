@@ -52,6 +52,10 @@ Complete essential reviewed delivery/recovery, activate the service and runtime,
 then obtain fresh user-authored-input physical evidence and publish checkpoints.
 Do not relabel unimplemented broader SDK features as finished because time is short.
 
+## D32 — Preserve Penguin Tap and stabilize for a fresh user test
+
+The latest user removes the immediate deadline and specifies this order: save the installed Penguin Tap first, commit/push all reviewed public work, fix remaining bugs, then let them repeat the end-to-end flow. The exact private package/source/firmware/database backup is complete and independently verified. Configured binaries, inputs and credentials remain private. Preserve the working app/service; Gemini must author the next user request. D32 supersedes D31's deadline priority, while retaining the broader [release plan](16-final-platform-plan.md) and its honest capability gates.
+
 ## Refinements that must not be undone accidentally
 
 | Earlier direction | Current interpretation |

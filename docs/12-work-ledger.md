@@ -1,5 +1,35 @@
 # Work and gate ledger
 
+## Current stabilization task (D32)
+
+The user now requests, in order: save Penguin Tap, publish the reviewed work, fix remaining bugs, then let them repeat the end-to-end flow. The earlier submission deadline no longer limits this task. Historical checkpoints below retain the evidence available at their timestamps.
+
+**Backup complete and independently accepted:** `private/saved-apps/penguin-tap-v3/` contains the exact active app.json (2883 bytes), original main.js, matching configured runtime.bin, a consistent SQLite backup, manifest and restoration notes. All files have private permissions. Package SHA256 `fb6d910813c529ede5c5ee478d8aa0e694e92f6823d2e5025e20f839f78c4156` matches active sequence 19/version 3 and its exact device ACK; source/assets match Gemini-authored sequence 17 unchanged. The independent reviewer also verified the successful trusted-run receipt, database integrity and firmware hash. No private backup files are published.
+
+**Installed at 19:09 Europe/Zurich:** following the user's emergency request, root republished that previously generated source/assets under a fresh intent/version after real native execution passed. Sequence 19 superseded the slower sequence 18 regeneration. This proves programmable activation; physical touch/gameplay, reboot and a fresh one-action generation test remain open. Evidence: `artifacts/verification/penguin-device-active.json` and private installation/backup manifests. The first next action is publication of accepted source and current documentation; no feature edits precede it.
+
+## Activation race corrected at 19:05 Europe/Zurich
+
+Actual sequence17 Penguin Tap also failed activation on the pre-fix runtime; all failed attempts retained the previous app and exact recovery identity. Independent replay of the generated packages passed the shared host owner. The hardware author then reproduced a real interleaving: pausing the old legacy app overwrote checkpoint_ticket after the candidate checkpoint succeeded, allowing delivery to read successful ACTIVATE with the old checkpoint identity before the next tick. The minimal fix publishes the already-proven candidate identity at the actual successful screen switch. The reviewer removed only that assignment and reproduced the old assertion failure, then reran the fixed regression,36 persistence cases and100 lifecycle cycles successfully. No resource or recovery gate was weakened.
+
+The pinned incremental target build passed. Guarded flash preserved app storage and verified binary SHA256 `7d6aeb02f6ae827089fa14ef119af28c6ed9bd9dcce11f24139129f030834a96`. Root verified a fresh matching device ELF report before retrying the user's exact frozen Penguin Tap request through the normal authenticated generation API. Gemini authors the retry; no game source or candidate bytes were hand-edited. The retry is sequence18 and physical activation remains pending at this checkpoint. Non-reset serial capture is running to observe the activation and memory diagnostics. Source owners have released their accepted changes; root owns physical verification and publication.
+
+## Restored companion/device connection at 18:56 Europe/Zurich
+
+The user explicitly requested a functioning Mac companion with the connected board. This scoped connection repair followed the submission triage. Root verified local and public authenticated HTTP200, the unchanged private identity/hotspot configuration, and the stale physical firmware endpoint. The accepted delivery/recovery slice was rebuilt using the standard firmware/build.sh. The guarded flash helper verified board revision, full original backup, exact runtime0.2 restore image and retained app-storage snapshot; app storage was not erased or initialized. Binary SHA256: `7cd0270bdb4d4abdf59b6cb325566e727d8118669f2fad0214fbeab147fbb3b7`.
+
+The actual device reported runtime0.3.0, schema1/2 and p4-canvas-1. Its reported ELF SHA256 matches the built ELF, and authenticated /api/session reports device_online=true. A twenty-second official reset/monitor captured runtime_ready and wifi_ip_ready with no HTTP failures, TLS handshake errors, panic, stack overflow or assertion. This proves connection and boot, not general programmable-app behavior. The user can now submit their own Penguin Tap prompt; no app was hand-written or submitted on their behalf. Sanitized evidence is retained in artifacts/verification/program-device-connection.json.
+
+Subsequent observation: retained schema1 sequence14 and generated schema2 sequence15 both produced activation_failed reports and recovered exact schema1 sequence12. Sequence14 followed an official monitor reset during the first boot window, so it is not assumed to share sequence15's cause. Sequence15's failed package was quarantined. A newer user-requested generation is in progress. Hardware author and independent reviewer reopened the activation gate; no successful programmable execution is claimed.
+
+Independent firmware review accepted the actual delivery/recovery/owner source and affected native checks:36 persistence faults,100 owner lifecycle cycles and the slow-trickle deadline regression. Worker ownership is released. Remaining physical gates include fresh generated-JavaScript interaction, resource margins and recovery. Original runtime and app-storage recovery images remain private and preserved. The current backend checkpoint is4c3f12e; this reviewed firmware slice and connection record are being checkpointed next, with actual publication success recorded separately.
+
+## Immediate submission triage — 10 October 2026, 18:53 Europe/Zurich
+
+The user reports only seconds remain. Coordinator inspected local status, handoff, readiness and the retained `checkpoint-program-service-publication.json` receipt: published commit `4c3f12e8c273e4fc2cc7f8108f55af861a4ac389`, 202 files, unfinished firmware integration explicitly excluded. Current firmware changes remain uncommitted; no flash, service mutation or new generation occurred. Submission copy must describe the demonstrated AppSpec voice-to-device path with Gradium and Gemini, while keeping physical programmable execution unproved. Organizer submission destination and actual submission remain unestablished.
+
+Independent lane `submission_review` accepted the actual triage paragraphs and submission pitch without material findings and released ownership. Coordinator ran `python3 -B scripts/check_context.py`: PASS, 208 public files. Earlier lane names below are historical assignments, not evidence of currently running agents.
+
 This is the authoritative task-state and ownership record. Gate definitions remain in [the execution plan](05-execution-plan.md); access conditions remain in [readiness](11-readiness.md). Update this file at each handoff. A future session must not infer active workers from completed research reports.
 
 Latest goal checkpoint: **18:34 Europe/Zurich, 10 October 2026**. The user set the reviewed plan summary as an active implementation goal (D30), resuming feature work and practical integration. Plan publication at5a183fd and all158 committed blobs/remote main were verified. The previous turn made concrete progress through reviewed public publication; this is the first implementation goal turn. Historical planning holds do not override D30.
@@ -14,7 +44,7 @@ States: `not_started`, `in_progress`, `blocked`, `passed`. A passed implementati
 | C02 scope and design | passed for planning | Coordinator; [product](02-product.md), [architecture](03-architecture.md), [contracts](04-contracts.md) | One-shot flow, canonical limits, timer semantics and deployment identity reconciled. Components are implemented and tested separately; complete physical integration remains pending |
 | C03 session and worker continuity | passed for planning | Coordinator; [handoff](09-session-handoff.md), [decisions](10-decisions.md), [readiness](11-readiness.md), this file | A fresh agent without chat history reconstructed product and next actions. Its findings are recorded below and reconciled |
 | C04 context audit and export | passed for initial snapshot | Coordinator; hardware independent archive review | 100-file initial export accepted, SHA-256 `01f3b33eaa2968d2b3ebe02e1df55934da414a82ad4de69df4484b0a7391b08b`. Current local doc edits need their own audit/review and later export if required |
-| C05 public GitHub publication | passed for latest checkpoint | Coordinator; [public repository](https://github.com/VincenzoImp/sketch-to-device) | Coordinator published `d11b72be89a806958c8d01312d91ed4c66f8001e`, then matched all190 reviewed file blobs, parent5a183fd and remote main. Initial history is preserved. Subsequent integration work remains pending review/publication |
+| C05 public GitHub publication | passed for latest checkpoint | Coordinator; [public repository](https://github.com/VincenzoImp/sketch-to-device) | Coordinator published `4c3f12e8c273e4fc2cc7f8108f55af861a4ac389`, verified 202 reviewed file blobs, parent d11b72be and remote main. Initial history is preserved. The accepted firmware slice/current documentation await the D32 checkpoint |
 | C06 autonomy and active research | passed for planning | Research author, independent cold-start reviewer; files released | [Working method](14-autonomy-and-research.md) verified against official sources; reviewer found no material defect. Implementation authorization now recorded |
 
 ## Product implementation gates
@@ -40,13 +70,13 @@ The deployed baseline is preserved while reviewed source evolves. Voice generati
 
 | Task | Owner / state | Exclusive files and next action |
 | --- | --- | --- |
-| Shared contracts and integration | Coordinator; in_progress | Programmable contract/package/receipt design, backend integration and current registers. Freeze interfaces before parallel integration |
-| Managed tools and backend review | partners_research; active | Accepted live source/image proof, input adapter, capability/publication/download gates and recovery store. Owns the cancellation-route correction and affected provider/probe tests |
-| Firmware delivery and recovery | hardware_research; implementation | Owns `firmware/main/app_delivery.*`, `app_recovery.*`, delivery tests and narrow reviewed owner recovery seams. Owner/package lifecycle and standard target build passed. Durable outbox, reboot/power-failure recovery and capability transport remain under implementation; no flash |
-| Independent review | cold_start_audit; active | Accepted owner lifecycle/recovery seam and broker binding. Reviews provider cancellation fix, then root server/companion integration and real-dispatch tests. No overlapping writes |
-| Production baseline | Coordinator; preserved | Running endpoint/hotspot/Hello Colors and frozen runtime0.2 restore image. No new firmware flashed |
+| Backup, documentation and publication | Coordinator; in progress | Backup verified; reconcile current registers and publish accepted source before bug fixes |
+| Independent checkpoint review | cold_start_audit; active | Backup/provenance/public exclusion accepted; review final doc reconciliation and release checkpoint. Read-only |
+| Firmware slice | hardware_research; accepted and released | Activation fix, package/owner/delivery integration and actual native checks accepted. No active edits |
+| Provider/backend slice | partners_research; released | Reviewed source is running. Cancellation and repair-loop problems need a new scoped assignment after publication |
+| Production baseline | Coordinator; preserved | Runtime 0.3/Penguin Tap active, live service/hotspot and private exact backup. Runtime 0.2/original backups retained |
 
-No new physical observer is active. The user supplies their later product prompt/image; platform probes must not be represented as that acceptance.
+No physical observer is active. The user supplies their later app prompt/media; diagnostics and emergency restoration must not be represented as that fresh acceptance.
 
 ## Programmable implementation checkpoint at 17:55 Europe/Zurich
 

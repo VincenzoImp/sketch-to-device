@@ -28,5 +28,6 @@ void app_main(void) {
     ESP_LOGI("device","local_runtime_ready");
     if (nvs_result != ESP_OK) app_ui_status("Network storage unavailable");
     else if (!app_delivery_start(builtin)) app_ui_status("Delivery unavailable");
-    for (;;) { app_ui_tick(); vTaskDelay(pdMS_TO_TICKS(20)); }
+    /* The dedicated owner task supplies input/time and all JavaScript execution. */
+    vTaskDelete(NULL);
 }

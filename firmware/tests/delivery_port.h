@@ -44,11 +44,12 @@ typedef struct http *esp_http_client_handle_t;
 typedef struct { int unused; } wifi_init_config_t;
 #define WIFI_INIT_CONFIG_DEFAULT() ((wifi_init_config_t){0})
 typedef struct { struct { unsigned char ssid[32],password[64]; struct { int authmode; } threshold; } sta; } wifi_config_t;
-typedef struct { int unused; } esp_sntp_config_t;
+typedef struct { void (*sync_cb)(struct timeval *); } esp_sntp_config_t;
 #define ESP_NETIF_SNTP_DEFAULT_CONFIG(s) ((esp_sntp_config_t){0})
 #define esp_crt_bundle_attach ((void *)1)
 esp_http_client_handle_t esp_http_client_init(const esp_http_client_config_t *c);
 int esp_http_client_set_header(esp_http_client_handle_t,const char *,const char *);
+int esp_http_client_set_timeout_ms(esp_http_client_handle_t,int);
 int esp_http_client_set_method(esp_http_client_handle_t,int);
 int esp_http_client_open(esp_http_client_handle_t,int);
 int esp_http_client_write(esp_http_client_handle_t,const char *,int);
@@ -83,3 +84,10 @@ int esp_wifi_start(void);
 int esp_wifi_connect(void);
 int esp_netif_sntp_init(const esp_sntp_config_t *);
 int esp_netif_sntp_reachability(unsigned int,unsigned int *);
+
+typedef struct { uint8_t app_elf_sha256[32]; } esp_app_desc_t;
+const esp_app_desc_t *esp_app_get_description(void);
+void esp_fill_random(void *,size_t);
+int64_t esp_timer_get_time(void);
+typedef enum { ESP_RST_POWERON,ESP_RST_PANIC,ESP_RST_INT_WDT,ESP_RST_TASK_WDT,ESP_RST_WDT,ESP_RST_CPU_LOCKUP } esp_reset_reason_t;
+esp_reset_reason_t esp_reset_reason(void);
