@@ -9,7 +9,7 @@ Updated: 10 October 2026. **Current task (D32): save Penguin Tap, publish the re
 - The preserved original v3 package/source, matching configured firmware and consistent SQLite snapshot are saved privately in `private/saved-apps/penguin-tap-v3/`. Independent review matched hashes, source provenance, active identity and database integrity. Configured firmware, database, credentials and input media are excluded from publication.
 - An additional current v8 snapshot is verified in `private/saved-apps/penguin-stabilized-20261010T181559048485Z-e5e13430d125/`, including matching configured BIN/ELF and a consistent database. The original v3 backup remains unchanged.
 - Earlier Android voice → Gradium → Gemini → Rocket Tata passed physical play and reboot. Photo-only Star Tap and text Hello Colors passed physical interaction. Those are schema 1 results, not evidence for every programmable SDK feature or combined media.
-- Prior verified public checkpoint: [0577c1f](https://github.com/VincenzoImp/sketch-to-device/commit/0577c1f5148f14d23e257ef93607793e390304ba), 210 reviewed files, retaining the earlier history. See [the ledger](12-work-ledger.md) for subsequent publication receipts.
+- Verified implementation checkpoint: [1334cfd](https://github.com/VincenzoImp/sketch-to-device/commit/1334cfd1eed5150537f39f1c809ebf9c2c2b9ece), 213 reviewed files, retaining the earlier history. See [the ledger](12-work-ledger.md) for subsequent publication receipts.
 
 ## Stabilization scope
 

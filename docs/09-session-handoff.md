@@ -8,7 +8,7 @@ Runtime0.3.0 is flashed and connected. The reviewed activation, recovered-app ac
 
 Gemini must author apps from user inputs; no coordinator-written games or hidden templates. The available programmable SDK exposes ordinary JavaScript, canvas, input, time and packaged images. Camera/microphone/speaker APIs are not implemented. Text, image and audio remain valid alone or combined. Preserve legacy schema 1 compatibility and all restore images.
 
-The live service endpoint/identity and hotspot credentials are private. Full filesystem/network access and serial operations are available. Do not repeat obsolete requests for manual Terminal work. The preceding stabilization checkpoint is published at `0577c1f5148f14d23e257ef93607793e390304ba` (210 reviewed files), retaining earlier history; [the ledger](12-work-ledger.md) owns later publication evidence and current file ownership. The new supervisor supports `scripts/run_demo.py --restart-backend` without changing the endpoint; it refuses an active generation.
+The live service endpoint/identity and hotspot credentials are private. Full filesystem/network access and serial operations are available. Do not repeat obsolete requests for manual Terminal work. The completed stabilization implementation checkpoint is published at `1334cfd1eed5150537f39f1c809ebf9c2c2b9ece` (213 reviewed files), retaining earlier history; [the ledger](12-work-ledger.md) owns later publication evidence and current file ownership. The new supervisor supports `scripts/run_demo.py --restart-backend` without changing the endpoint; it refuses an active generation.
 
 ## Next actions
 
