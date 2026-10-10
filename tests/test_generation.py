@@ -95,7 +95,7 @@ class GenerationTests(unittest.TestCase):
         self.assertEqual(progress[-1][0], "ready")
         payload = client.payloads[0]
         self.assertEqual(payload["agent"], generator.AGENT)
-        self.assertEqual(payload["agent_config"], {"type": "antigravity", "model": "gemini-3.8-flash", "max_total_tokens": 200000})
+        self.assertEqual(payload["agent_config"], {"type": "antigravity", "model": "gemini-3.5-flash-lite", "max_total_tokens": 200000})
         self.assertEqual(payload["environment"]["network"], "disabled")
         self.assertEqual(payload["tools"], [{"type": "code_execution"},
                                             {"type": "google_search"}, {"type": "url_context"}])
@@ -666,7 +666,7 @@ class GenerationTests(unittest.TestCase):
         self.assertEqual(report["compile_ms"],0)
         self.assertEqual(report["source_sha256"],hashlib.sha256(RAW).hexdigest())
         self.assertEqual(report["run_id"],initial["run_id"])
-        self.assertEqual(report["profile"], {"model": "gemini-3.8-flash", "token_budget": 200000, "job_seconds": 600})
+        self.assertEqual(report["profile"], {"model": "gemini-3.5-flash-lite", "token_budget": 200000, "job_seconds": 600})
         self.assertEqual(timing.summary()["total_ms"], 69500)
         with tempfile.TemporaryDirectory() as temporary,patch.object(generator,"ROOT",Path(temporary)):
             self.real_record_timing(report)
@@ -916,6 +916,28 @@ class GenerationTests(unittest.TestCase):
                     self.assertEqual((Path(temporary) / "artifacts/generated-app.json").read_bytes(), RAW)
                 else:
                     self.assertFalse((Path(temporary) / "artifacts/generated-app.json").exists())
+
+    def test_live_cli_default_reaches_provider_mount_and_saved_report(self):
+        sources = generator._sources({"tap_game": True, "duration_seconds": 10})
+        client = FakeClient()
+        expected = {"model": "gemini-3.5-flash-lite", "token_budget": 200000, "job_seconds": 600}
+        with tempfile.TemporaryDirectory() as temporary, \
+                patch.object(generator, "ROOT", Path(temporary)), patch.object(generator, "_sources", return_value=sources), \
+                patch.object(generator, "ProviderClient", return_value=client), patch.object(generator, "_record_terminal"), \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(generator.main(["--live"]), 0)
+            payload = client.payloads[0]
+            self.assertEqual(payload["agent_config"], {"type": "antigravity", "model": expected["model"], "max_total_tokens": expected["token_budget"]})
+            manifest = next(source["content"] for source in payload["environment"]["sources"]
+                            if source["target"].endswith("/manifest.json"))
+            self.assertEqual(json.loads(manifest)["generation_profile"], expected)
+            report = json.loads(output.getvalue().splitlines()[-1])
+            self.assertEqual(report["profile"], expected)
+            self.assertEqual(report["timing"]["diagnostics"]["managed_model"], expected["model"])
+            self.assertEqual(report["timing"]["diagnostics"]["token_budget"], expected["token_budget"])
+            self.assertEqual(report["timing"]["diagnostics"]["job_timeout_seconds"], expected["job_seconds"])
+            self.assertEqual(report, json.loads((Path(temporary) / "artifacts/generation-last-result.json").read_bytes()))
+            self.assertEqual((Path(temporary) / "artifacts/generated-app.json").read_bytes(), RAW)
 
 
 class ProviderTests(unittest.TestCase):

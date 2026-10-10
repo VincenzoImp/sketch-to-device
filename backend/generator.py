@@ -32,7 +32,7 @@ from .providers import (ProviderClient, ProviderError as GenerationError, ROOT, 
 
 AGENT = "antigravity-preview-09-2026"
 MANAGED_TOOLS = ("code_execution", "google_search", "url_context")
-DEFAULT_MANAGED_MODEL = "gemini-3.8-flash"
+DEFAULT_MANAGED_MODEL = "gemini-3.5-flash-lite"
 TOKEN_BUDGET = 200000
 JOB_SECONDS = 600
 MAX_MEDIA_BYTES = MAX_TOTAL_MEDIA_BYTES

@@ -50,6 +50,10 @@ The implemented path has two distinct generated physical apps and ordinary reboo
 | Device unavailable and both keys unknown | Superseded: both minimal provider authentications passed; chip and flash identified, custom runtime flashed and built-in tap behavior reported. See readiness for specific untested capabilities |
 | Separate multimodal model prepass and ConceptBrief before managed generation | Superseded by direct managed-agent images, one extracted video frame, Gradium speech and narrow trusted behavior requirements. ConceptBrief remains a deferred proposal, not an implemented gate |
 
+## Measured model selection
+
+Following D26, one controlled live Hello Colors task produced identical host-verified bytes with Flash-Lite in40.007seconds and Flash in139.112seconds. The coordinator selected `gemini-3.5-flash-lite` as the source default, preserving200,000tokens,600seconds and the same tools/checks. This is a pragmatic operational choice from one task; broader quality and running-service activation remain unproved.
+
 ## Fallback semantics
 
 Photo plus speech is a declared fallback for video transport/decoding failure and preserves visual-plus-spoken understanding. Text plus app-specific Gradium TTS is an **unimplemented alternative** that could demonstrate both partners, but does **not** fulfill the planned multimodal-input acceptance. It remains a reduced outcome unless the user accepts that scope change and it is implemented and tested. A simulator or saved package similarly cannot satisfy live generation on physical hardware.
