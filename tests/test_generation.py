@@ -65,7 +65,7 @@ class FakeClient:
             return {"files": [{"type": "FILE", "path": "workspace/out/app.json"}]}
         if raw_response:
             return self.artifacts.pop(0)
-        if path.endswith("/cancel"):
+        if path.endswith(":cancel"):
             return {"id": "interaction_1", "status": "cancelled"}
         return completed()
 
@@ -229,7 +229,7 @@ class GenerationTests(unittest.TestCase):
             deadlines = []
             def google(method, path, **kwargs):
                 deadlines.append(client.deadline)
-                if path.endswith("/cancel"):
+                if path.endswith(":cancel"):
                     return original(method, path, **kwargs)
                 now[0] = 100.0 + seconds - 10
                 return response
@@ -573,14 +573,14 @@ class GenerationTests(unittest.TestCase):
         client = FakeClient([{"id": "interaction_1", "status": "in_progress"}])
         original = client.google
         def google(method, path, **kwargs):
-            if not path.endswith("/cancel"):
+            if not path.endswith(":cancel"):
                 raise providers.ProviderError("deadline")
             return original(method, path, **kwargs)
         client.google = google
         with patch.object(generator.time, "sleep"), self.assertRaises(generator.GenerationError) as caught:
             self.generate(client)
         self.assertEqual(caught.exception.code, "deadline")
-        self.assertEqual(client.calls, [("POST", "/v1beta/interactions/interaction_1/cancel")])
+        self.assertEqual(client.calls, [("POST", "/v1beta/interactions/interaction_1:cancel")])
         self.assertEqual(caught.exception.diagnostics["poll_count"], 1)
         self.assertEqual(caught.exception.diagnostics["cancellation"], "confirmed")
 
@@ -778,7 +778,7 @@ class GenerationTests(unittest.TestCase):
             client=FakeClient([{"id":"interaction_1","status":"in_progress"}]);calls=[]
             def request(method,path,**kwargs):
                 calls.append((method,path))
-                if not path.endswith("/cancel"):raise providers.ProviderError("provider_request",{"http_status":503,"http_category":"provider_http_error"})
+                if not path.endswith(":cancel"):raise providers.ProviderError("provider_request",{"http_status":503,"http_category":"provider_http_error"})
                 if isinstance(result,Exception):raise result
                 return result
             client.google=request
@@ -792,7 +792,7 @@ class GenerationTests(unittest.TestCase):
         client=FakeClient([completed(b'{}'),{"id":"interaction_2","status":"UNKNOWN"}],[b'{}'])
         original=client.google
         def request(method,path,**kwargs):
-            if path.endswith("/cancel"):
+            if path.endswith(":cancel"):
                 client.calls.append((method,path))
                 return {"id":"interaction_2","status":"cancelled"}
             return original(method,path,**kwargs)
@@ -800,8 +800,8 @@ class GenerationTests(unittest.TestCase):
         with self.assertRaises(generator.GenerationError) as caught:self.generate(client)
         self.assertEqual(caught.exception.diagnostics["reason"],"unknown_interaction_status")
         self.assertEqual(caught.exception.diagnostics["cancellation"],"confirmed")
-        self.assertEqual([call for call in client.calls if call[1].endswith("/cancel")],
-                         [("POST","/v1beta/interactions/interaction_2/cancel")])
+        self.assertEqual([call for call in client.calls if call[1].endswith(":cancel")],
+                         [("POST","/v1beta/interactions/interaction_2:cancel")])
         self.assertEqual(client.payloads[1]["previous_interaction_id"],"interaction_1")
 
     def test_browser_webm_missing_duration_is_measured_then_transcoded(self):
@@ -972,6 +972,34 @@ class ProviderTests(unittest.TestCase):
         for path in ["https://other.test/", "/v1beta/environments/e/files/../../.env?alt=media", "/v1beta/interactions/i?redirect=other"]:
             with patch.object(providers, "network_preflight") as preflight, self.assertRaises(providers.ProviderError):
                 providers.request("gemini", "PRIVATE", path, b"", "application/json", time.monotonic() + 1, method="GET")
+            preflight.assert_not_called()
+
+    def test_cancel_route_accepts_only_post_colon_action_with_valid_id(self):
+        path = "/v1beta/interactions/test_Interaction-123:cancel"
+        connection, response = Mock(), Mock()
+        expected = b'{"id":"test_Interaction-123","status":"cancelled"}'
+        response.read1.side_effect = [expected, b""]
+        response.length, response.status = 0, 200
+        connection.getresponse.return_value = response
+        with patch.object(providers, "network_preflight", return_value=(connection, {})):
+            actual = providers.request("gemini", "synthetic", path, b"{}", "application/json",
+                                       time.monotonic() + 1)
+        self.assertEqual(actual, expected)
+        self.assertEqual(connection.request.call_args.args, ("POST", path))
+        self.assertEqual(connection.request.call_count, 1)
+        for method, invalid in [("GET", path), ("DELETE", path),
+                ("POST", "/v1beta/interactions/test_Interaction-123/cancel"),
+                ("POST", "/v1beta/interactions/:cancel"),
+                ("POST", "/v1beta/interactions/../other:cancel"),
+                ("POST", "/v1beta/interactions/id%3Acancel"),
+                ("POST", path + "?redirect=other"),
+                ("POST", "/v1beta/interactions/" + "i" * 4097 + ":cancel")]:
+            with self.subTest(method=method, path=invalid), \
+                    patch.object(providers, "network_preflight") as preflight, \
+                    self.assertRaises(providers.ProviderError) as caught:
+                providers.request("gemini", "synthetic", invalid, b"{}", "application/json",
+                                  time.monotonic() + 1, method=method)
+            self.assertEqual(caught.exception.code, "provider_request")
             preflight.assert_not_called()
 
     def test_total_request_deadline_interrupts_blocked_headers(self):

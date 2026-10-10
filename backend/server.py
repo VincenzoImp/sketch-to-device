@@ -21,6 +21,8 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from backend.deployments import ConflictError, DeploymentStore, StoreError
+from backend.device_runtime import CapabilityError
+from backend.device_recovery import RecoveryStore
 from backend.media_limits import MAX_ATTACHMENTS, MAX_TOTAL_MEDIA_BYTES, MAX_UPLOAD_BYTES
 from backend.providers import ERROR_MESSAGES, safe_diagnostics
 
@@ -80,7 +82,7 @@ def single_instance(directory):
 
 
 class Application:
-    def __init__(self, directory, generator=None):
+    def __init__(self, directory, generator=None, program_generator=None):
         self.directory = Path(directory)
         self.config = configure(self.directory)
         self.database = self.directory / "deployments.sqlite"
@@ -89,6 +91,10 @@ class Application:
         for folder in (self.uploads, self.jobs):
             folder.mkdir(exist_ok=True, mode=0o700)
         self.generator = generator
+        self.program_generator = program_generator
+        # An explicitly supplied legacy generator remains available for legacy
+        # integration tests. Normal product requests target the programmable SDK.
+        self.programmable = generator is None
         self.lock = threading.Lock()
         self.busy = False
         self.requests = {}
@@ -104,6 +110,10 @@ class Application:
                 self.requests[record["request_id"]] = (record["intent_id"], record["request_sha256"])
                 intent = store.get_intent(self.config["session_id"], record["intent_id"])
                 if intent["status"] == "accepted":
+                    if self.selection_path(record["intent_id"]).is_file():
+                        record.update(stage="waiting_device", detail="Your tested app is saved. Waiting for the compatible device.")
+                        save_private(path, record)
+                        continue
                     try:
                         store.fail_intent(self.config["session_id"], record["intent_id"], "server_restarted")
                     except ConflictError:
@@ -113,9 +123,43 @@ class Application:
                 elif intent["status"] == "published":
                     record.update(stage="ready", detail="Verified. Waiting for your device to install.")
                     save_private(path, record)
+        self.resume_selected()
 
     def store(self):
-        return DeploymentStore(self.database)
+        return RecoveryStore(self.database)
+
+    def selection_path(self, identifier):
+        return self.jobs / identifier / "selection.json"
+
+    def publish_selected(self, identifier):
+        from backend.program_runner import DEFAULT_RUNNER, _read
+        selection = json.loads(self.selection_path(identifier).read_bytes())
+        runner_hash = hashlib.sha256(_read(DEFAULT_RUNNER, 64 * 1024 * 1024)).hexdigest()
+        with self.store() as store:
+            # Store checks current intent, exact receipt and fresh compatibility
+            # inside its publication transaction. Stale targets keep the result.
+            envelope = store.publish_program(self.config["session_id"], identifier, selection["receipt_id"],
+                                              expected_runner_sha256=runner_hash)
+        self.progress(identifier, "ready", "Tested and saved. Waiting for your device to install.")
+        return envelope
+
+    def resume_selected(self):
+        """Retry only durable selected work; never repeat provider generation."""
+        with self.lock:
+            if self.busy:
+                return
+            for path in self.jobs.glob("*.json"):
+                record = json.loads(path.read_bytes())
+                if record.get("stage") != "waiting_device":
+                    continue
+                try:
+                    self.publish_selected(record["intent_id"])
+                except CapabilityError:
+                    pass
+                except ConflictError:
+                    self.progress(record["intent_id"], "superseded", "Replaced by a newer request.")
+                except (StoreError, OSError, ValueError):
+                    self.progress(record["intent_id"], "failed", "generation_failed")
 
     def authorized(self, authorization, role):
         expected = "Bearer " + self.config[role + "_token"]
@@ -170,7 +214,8 @@ class Application:
             if self.busy:
                 raise RequestError("generation_busy", 409)
             with self.store() as store:
-                intent = store.accept_intent(self.config["session_id"], self.config["device_id"], key, frozen)
+                accept = store.accept_program_intent if self.programmable else store.accept_intent
+                intent = accept(self.config["session_id"], self.config["device_id"], key, frozen)
             record_path = self.jobs / (intent["intent_id"] + ".json")
             if record_path.exists():
                 return {"job_id": intent["intent_id"]}
@@ -203,6 +248,16 @@ class Application:
 
     def _generate(self, identifier, prompt, media):
         try:
+            if self.programmable:
+                from backend.program_generation import generate_program
+                generator = self.program_generator or generate_program
+                generator(self.database, self.config["session_id"], identifier, self.jobs / identifier,
+                          self.uploads, lambda stage, detail: self.progress(identifier, stage, detail))
+                try:
+                    self.publish_selected(identifier)
+                except CapabilityError:
+                    self.progress(identifier, "waiting_device", "Your tested app is saved. Waiting for the compatible device.")
+                return
             generator = self.generator
             if generator is None:
                 from backend.generator import generate_app
@@ -232,6 +287,7 @@ class Application:
             desired = store.desired_for_device(self.config["device_id"])
             active = store.active_for_session(self.config["session_id"], self.config["device_id"])
             history = store.ack_history(self.config["session_id"], identifier)
+            recovery = store.recovery_for_intent(self.config["session_id"], identifier)
         try:
             record = json.loads((self.jobs / (identifier + ".json")).read_text())
         except FileNotFoundError:
@@ -240,7 +296,11 @@ class Application:
             record["diagnostics"] = safe_diagnostics(record["diagnostics"])
         matching = desired is not None and desired["sequence"] == intent["sequence"]
         is_active = matching and active is not None and active["deployment_id"] == desired["deployment_id"]
-        if is_active:
+        if recovery:
+            detail = ("This app stopped. The previous app was restored." if recovery["recovered"] is not None
+                      else "This app stopped. The device returned to its built-in app.")
+            record.update(stage="recovered", detail=detail)
+        elif is_active:
             record.update(stage="active", detail="Your app is running on the device.")
         elif intent["status"] in ("failed", "superseded"):
             record.update(stage=intent["status"], detail=intent["error_code"] or "Replaced by a newer request.")
@@ -308,6 +368,12 @@ class Handler(BaseHTTPRequestHandler):
                 raise RequestError("invalid_job")
             return self.send(200, app.status(identifier))
         with app.store() as store:
+            if self.command == "POST" and path == "/api/device/runtime":
+                store.record_capabilities(app.config["device_id"], json.loads(self.read_body(8192)))
+                app.resume_selected()
+                return self.send(200, {"recorded": True})
+            if self.command == "POST" and path == "/api/device/recovery":
+                return self.send(200, store.record_recovery(app.config["device_id"], json.loads(self.read_body(4096))))
             if self.command == "GET" and path == "/api/device/desired":
                 return self.send(200, {"desired": store.desired_for_device(app.config["device_id"])})
             if self.command == "POST" and path == "/api/device/ack":
@@ -326,6 +392,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send(exc.status, {"error": exc.code})
         except ConflictError:
             self.send(409, {"error": "request_conflict"})
+        except CapabilityError as exc:
+            self.send(409, {"error": exc.code})
         except StoreError:
             self.send(400, {"error": "invalid_operation"})
         except (ValueError, UnicodeError):

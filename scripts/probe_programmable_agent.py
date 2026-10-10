@@ -315,7 +315,7 @@ def probe(client, checker, deadline, *, sleep=time.sleep, clock=time.monotonic, 
             if current_id is not None:
                 try:
                     client.deadline = clock() + 9
-                    cancelled = client.google("POST", "/v1beta/interactions/" + current_id + "/cancel", {})
+                    cancelled = client.google("POST", "/v1beta/interactions/" + current_id + ":cancel", {})
                     if (not submission_unresolved and cancelled.get("id") == current_id
                             and cancelled.get("status") == "cancelled"):
                         report["cancellation"] = "confirmed"

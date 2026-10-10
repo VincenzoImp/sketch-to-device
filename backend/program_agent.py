@@ -367,7 +367,7 @@ def run_program_agent(input_blocks, *, job_dir, tool_definitions, execute_tool,
                     client.deadline = min(started + job_seconds, _clock() + 9)
                     if _clock() < client.deadline:
                         identity = journal["interaction_id"]
-                        cancelled = client.google("POST", "/v1beta/interactions/" + identity + "/cancel", {})
+                        cancelled = client.google("POST", "/v1beta/interactions/" + identity + ":cancel", {})
                         if (not journal["submission_unresolved"] and type(cancelled) is dict
                                 and cancelled.get("id") == identity and cancelled.get("status") == "cancelled"):
                             journal["cancellation"] = "confirmed"

@@ -41,6 +41,17 @@ Status meanings: **required** is an explicit user constraint; **selected** is th
 
 The implemented path has voice, photo-only and text-generated physical app evidence, with ordinary reboot evidence for the first voice app. Broader request fidelity, combined media, fault recovery and the programmable extension remain open. The [ledger](12-work-ledger.md) records exact evidence and remaining gates.
 
+## D31 — Final thirty-minute integration window
+
+User steering at18:31Europe/Zurich: only thirty minutes remain, so prioritize the
+first real programmable end-to-end path now. This changes immediate execution
+priority, not the general authoring requirement. Text, image and audio remain
+valid alone or in any supported combination; no prompt/image special case or
+prepared app is introduced. Defer new peripheral modules and aesthetic work.
+Complete essential reviewed delivery/recovery, activate the service and runtime,
+then obtain fresh user-authored-input physical evidence and publish checkpoints.
+Do not relabel unimplemented broader SDK features as finished because time is short.
+
 ## Refinements that must not be undone accidentally
 
 | Earlier direction | Current interpretation |

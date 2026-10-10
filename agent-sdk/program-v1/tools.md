@@ -28,3 +28,21 @@ the trusted native runner. Printed markers, fabricated receipts, model-authored
 test summaries and final prose cannot select a package. Do not include secrets
 or private input in searches. Backend tool results and screenshots return in the
 same managed environment through correlated function results.
+
+## Scenario shape
+
+Every `run_app` scenario includes `version:1`, a uint32 `seed`, nonnegative
+`initial_time_ms`, `wall_time` (null when unavailable), and `events`.
+Use only the exact fields for each event:
+
+| Event | Exact fields |
+| --- | --- |
+| Capture the current frame | `type:"frame"`, `name` (unique lowercase identifier) |
+| Advance a tick, pause or resume | `type:"tick"`/`"pause"`/`"resume"`, `time_ms` |
+| Pointer input | `type:"pointer"`, `phase:"down"`/`"move"`/`"up"`/`"cancel"`, `x`, `y`, `time_ms` |
+
+Frame events have no `time_ms`: capture after the desired tick/input event.
+For a tap, send both pointer down and up. Coordinates use the320x432 viewport;
+times are ordered and span at most120000ms. Include an initial frame and frames
+after meaningful interactions, up to16frames/4096events. Test the user's behavior;
+a single successful initial frame is only an initialization check.

@@ -140,7 +140,7 @@ def request(provider, key, path, body, content_type, deadline, max_response=5242
     """One allowlisted request; bounded DNS/TLS/headers/body, no retry."""
     identifier = r"[A-Za-z0-9_-]{1,4096}"
     google_route = ((method == "POST" and (path == "/v1beta/interactions" or re.fullmatch(
-        r"/v1beta/interactions/" + identifier + r"/cancel", path))) or
+        r"/v1beta/interactions/" + identifier + r":cancel", path))) or
         (method == "GET" and (re.fullmatch(r"/v1beta/interactions/" + identifier, path) or re.fullmatch(
             r"/v1beta/environments/" + identifier + r"/files(?:\?recursive=true|/"
             r"(?:workspace/)?out/app\.json\?alt=media)", path))))

@@ -2,7 +2,7 @@
 
 This is the authoritative task-state and ownership record. Gate definitions remain in [the execution plan](05-execution-plan.md); access conditions remain in [readiness](11-readiness.md). Update this file at each handoff. A future session must not infer active workers from completed research reports.
 
-Latest goal checkpoint: **18:00 Europe/Zurich, 10 October 2026**. The user set the reviewed plan summary as an active implementation goal (D30), resuming feature work and practical integration. Plan publication at5a183fd and all158 committed blobs/remote main were verified. The previous turn made concrete progress through reviewed public publication; this is the first implementation goal turn. Historical planning holds do not override D30.
+Latest goal checkpoint: **18:34 Europe/Zurich, 10 October 2026**. The user set the reviewed plan summary as an active implementation goal (D30), resuming feature work and practical integration. Plan publication at5a183fd and all158 committed blobs/remote main were verified. The previous turn made concrete progress through reviewed public publication; this is the first implementation goal turn. Historical planning holds do not override D30.
 
 States: `not_started`, `in_progress`, `blocked`, `passed`. A passed implementation gate needs observed evidence. Ownership is a logical lane, not a promise that a particular prior agent session still exists.
 
@@ -14,7 +14,7 @@ States: `not_started`, `in_progress`, `blocked`, `passed`. A passed implementati
 | C02 scope and design | passed for planning | Coordinator; [product](02-product.md), [architecture](03-architecture.md), [contracts](04-contracts.md) | One-shot flow, canonical limits, timer semantics and deployment identity reconciled. Components are implemented and tested separately; complete physical integration remains pending |
 | C03 session and worker continuity | passed for planning | Coordinator; [handoff](09-session-handoff.md), [decisions](10-decisions.md), [readiness](11-readiness.md), this file | A fresh agent without chat history reconstructed product and next actions. Its findings are recorded below and reconciled |
 | C04 context audit and export | passed for initial snapshot | Coordinator; hardware independent archive review | 100-file initial export accepted, SHA-256 `01f3b33eaa2968d2b3ebe02e1df55934da414a82ad4de69df4484b0a7391b08b`. Current local doc edits need their own audit/review and later export if required |
-| C05 public GitHub publication | passed for latest checkpoint | Coordinator; [public repository](https://github.com/VincenzoImp/sketch-to-device) | Coordinator published `5a183fd1ca8e40012e17f61d1408b595fba27c5f`, then matched all158 reviewed file blobs and remote main. Initial history is preserved. Subsequent D30 implementation requires reviewed checkpoints |
+| C05 public GitHub publication | passed for latest checkpoint | Coordinator; [public repository](https://github.com/VincenzoImp/sketch-to-device) | Coordinator published `d11b72be89a806958c8d01312d91ed4c66f8001e`, then matched all190 reviewed file blobs, parent5a183fd and remote main. Initial history is preserved. Subsequent integration work remains pending review/publication |
 | C06 autonomy and active research | passed for planning | Research author, independent cold-start reviewer; files released | [Working method](14-autonomy-and-research.md) verified against official sources; reviewer found no material defect. Implementation authorization now recorded |
 
 ## Product implementation gates
@@ -41,9 +41,9 @@ The deployed baseline is preserved while reviewed source evolves. Voice generati
 | Task | Owner / state | Exclusive files and next action |
 | --- | --- | --- |
 | Shared contracts and integration | Coordinator; in_progress | Programmable contract/package/receipt design, backend integration and current registers. Freeze interfaces before parallel integration |
-| Managed authoring loop and SDK | partners_research; source released for review | `backend/program_agent.py`, its focused tests and `agent-sdk/program-v1/*`. G0 completed; ordinary source generation and broker integration remain open |
-| Shared runtime and firmware integration design | hardware_research; core accepted, integration read-only | `firmware/program_core/*` released after review. Inspect production owner/task/recovery seams before firmware edits; also independently review the managed loop |
-| Independent review | cold_start_audit; active | Accepted G0, package/assets, candidate store and shared native core; reviewing root's supervised runner wrapper. No overlapping writes |
+| Managed tools and backend review | partners_research; active | Accepted live source/image proof, input adapter, capability/publication/download gates and recovery store. Owns the cancellation-route correction and affected provider/probe tests |
+| Firmware delivery and recovery | hardware_research; implementation | Owns `firmware/main/app_delivery.*`, `app_recovery.*`, delivery tests and narrow reviewed owner recovery seams. Owner/package lifecycle and standard target build passed. Durable outbox, reboot/power-failure recovery and capability transport remain under implementation; no flash |
+| Independent review | cold_start_audit; active | Accepted owner lifecycle/recovery seam and broker binding. Reviews provider cancellation fix, then root server/companion integration and real-dispatch tests. No overlapping writes |
 | Production baseline | Coordinator; preserved | Running endpoint/hotspot/Hello Colors and frozen runtime0.2 restore image. No new firmware flashed |
 
 No new physical observer is active. The user supplies their later product prompt/image; platform probes must not be represented as that acceptance.
@@ -56,6 +56,59 @@ No new physical observer is active. The user supplies their later product prompt
 - Immutable candidate/version reservation, trusted receipts and exact publication passed10new store tests plus22legacy tests. Independent review reproduced and fixed a mixed legacy/program connection version collision. Synthetic store receipts establish persistence/ownership only.
 - Shared QuickJS/LVGL C core/parser/host CLI passed an ASan/UBSan100-cycle/adversarial harness and five real subprocess tests, including wire parity, images, all three clock qualities and oversized scenarios. Independent review accepted this slice. P4 object compilation passed; no target link, firmware deployment or physical JavaScript execution has occurred.
 - Root's supervised native runner wrapper passed six tests and independent review after fixing a deadline overrun during frame verification. The managed source-authoring loop/consultable SDK passed22protocol tests and independent review after fixing late-submission acceptance. The complete suite passed248tests before those last two adapter regressions, which passed in the affected22-test rerun. These are source/local checks; no live arbitrary-program generation is claimed yet. Next: reviewed broker, actual Gemini-authored code execution/repair, then capability-aware production integration and recoverable physical installation. The production0.2 service/device and exact restore image remain intact.
+
+## Integration checkpoint at 18:16 Europe/Zurich
+
+- Published and independently matched190 exact committed blobs, preserved parent and remote main at `d11b72be89a806958c8d01312d91ed4c66f8001e` (Add programmable runtime and trusted agent tools). Ignored publication evidence: `artifacts/verification/checkpoint-program-core-publication.json`. This source checkpoint does not change the running service or board.
+- The broker now binds its private directory, original-image provenance and durable function results to the exact job. Independent review reproduced stale red-image reuse under a later blue-image request; directory binding and original SHA/MIME checks fix it. Seven real native/SQLite/FFmpeg broker tests plus ten store tests pass and were independently accepted.
+- Capability storage and compatibility checks passed eleven actual SQLite tests and independent review, including freshness expiring while a competing transaction held the database lock. HTTP integration remains open; declared firmware hashes are not hardware attestation.
+- The fresh managed-code probe is being independently reviewed before its provider call. A weak two-pixel fidelity check was rejected after a counterexample passed it. The corrected checker verifies full frames, varied pointer positions, exact package title and a separate host-only image mutation proving actual asset use. Four real native tests pass; no fresh managed-program success is claimed yet.
+- The owner task's real host lifecycle harness passes with QuickJS/LVGL and sanitizers. Root's standard IDF build reached actual target compilation, exposing two formatting warnings fixed by the author; full build/review is still underway. Independent review found queued input could survive activation/rollback and mutate the restored app; the author is fixing this before integration. No flash, service restart or physical operation has occurred in this goal.
+
+## Integration checkpoint at 18:34 Europe/Zurich
+
+- The first real source-authoring attempt failed after139.524seconds because the model repeatedly omitted scenario.version. Precise tool argument schema/repair feedback was added and independently reviewed before another attempt.
+- The changed live probe passed at16:21:32.734418UTC in155.090seconds. Gemini authored427bytes of ordinary JavaScript and used a transformed job-owned original image. Selected package3902bytes, SHA256`505a3c16dbec9205ee56c7801cd97c48e6672e283c766f577724c3ffd6bdf94a`; source SHA256`def9c8ceb301a1bdddeb2896c9ef67860ca5ae75267f75d635f18496ae24b958`. Independent review reproduced all seven complete frames/six varied-position pointer pairs and the host-only altered-asset check. Receipt, original provenance and retained model function fingerprint match. The isolated probe database has no deployment/ACK. This is a platform diagnostic, not the user's app or physical execution.
+- The managed run made eight custom calls: one asset conversion, six runs (three scenario.frame field rejections followed by three successful native runs), then selection. It remained requires_action after selection because cancellation was unconfirmed. Root found that the Antigravity guide specifies /ID:cancel; callers/allowlists/tests were changed and independently reviewed. A later primary-source comparison found the REST reference instead documents /ID/cancel, so the guide alone does not establish that the previous route was wrong. Do not call observation termination remote cancellation.
+- Timing evidence cannot identify the79seconds before the first custom result as SDK reading or reasoning: retained final trace is insufficient. A short exact scenario-field guide and actionable frame repair feedback address the observed field errors; their verification/review is pending. No firmware compilation happens per app.
+- Capability acceptance, first publication and schema2 download now enforce freshness in the same SQLite transaction. Twelve capability, ten program-store, sixteen recovery and twenty-two legacy-deployment tests (60total) passed and independent review accepted the delta. Recovery reports quarantine exact failed activations permanently, reconcile older lost-ACK state and preserve strictly newer unrelated activation. Historical ACKs remain available but cannot re-establish quarantined health.
+- The frozen multimodal input adapter passed three tests and independent review, including real FFmpeg/native plumbing, original-image integrity and separate input/agent failure timings. Provider behavior in these tests is explicitly fake; the fresh live source probe is separate evidence.
+- The standard ESP-IDF full owner-integration build passed on the coordinator after actual C warnings were corrected. Independent owner review fixed stale queued input across activation/rollback and sticky recovery faults during pending preparation; sanitizer lifecycle checks passed. The subsequent NVS delivery/outbox work remains incomplete and needs its own build/review.
+- Root's HTTP/companion integration passed independent review after fixing post-active monitoring. Eighteen actual request-dispatch/SQLite/controller tests passed, including four new tests using the real native runner with a fake authoring agent: no-capability/no-billing gate, exact package download/ACK, expired capability retaining selection across restart, and late failure defeating historical/late active ACKs. The real Node controller test verifies late recovery after reload and rejects late old-job responses during a new generation. This does not activate the service. Runtime0.2, its working app, hotspot and exact restore image remain untouched.
+
+### Immediate window and observed cleanup
+
+D31 records the user's thirty-minute remaining window and reaffirmed support for
+text/image/audio singly or together. General SDK delivery is prioritized; new
+peripherals and polish are deferred. The exact scenario guide/repair feedback
+passed independent review and nine native broker tests. The cancellation-route
+correction passed independent review and88affected tests plus11probe self-tests.
+Root then tried the documented colon route on the two existing probe handles:
+both returned404NOT_FOUND. Independent GET requests matched each identity and
+still returnedrequires_action. Cleanup remains unconfirmed; no new generation
+was started and no successful termination is claimed. Per-job private summaries
+retain those observations. The provider reviewer then found conflicting official endpoints: the [Antigravity guide](https://ai.google.dev/gemini-api/docs/antigravity-agent#background-execution) gives ID:cancel, while the [REST reference](https://ai.google.dev/api/interactions-api#cancelInteractionById) gives ID/cancel and limits cancellation to running background interactions. Neither explains the observed requires_action behavior. Preserve this uncertainty; do not claim the route change has resolved cancellation.
+
+### Reviewed service activation at18:38
+
+Root ran the complete300-test host suite: PASS18.436seconds. Independent server
+review found that the phone stopped polling after its first active state; a
+separate resumable active-job monitor now reports later recovery and cannot
+overwrite a newer generation. The affected18handler/native/controller tests
+passed independent review. Root backed up the live SQLite store, stopped the old
+demo supervisor and started the reviewed service directly. The new public HTTPS
+route returned200 with exact current app.js bytes and authenticated session
+access. A negative local DNS cache initially delayed the tunnel; flushing that
+cache resolved it without changing DNS settings or TLS checks. The private QR
+and firmware endpoint were updated, preserving hotspot and device credentials.
+The device has not yet been flashed and reports offline to this new endpoint.
+
+Root's standard target build passed after adding the actual esp_app_format
+component dependency. Root UART read access passed. A read-only backup of the
+existing512KiB apps partition has SHA256
+`2948bc040229183d2036488b55d34d6dc86cf84f29c92796a2e12e4d8a25b2b1`;
+the exact0.2 restore image remains unchanged. The new firmware's NVS/owner review
+is still pending, and no physical programmable execution is claimed.
 
 ## Review evidence
 

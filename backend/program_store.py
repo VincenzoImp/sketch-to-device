@@ -49,6 +49,12 @@ class ProgramStore(DeploymentStore):
             raise ConflictError("Program job is no longer the current install intent")
         return intent
 
+    def job_request_bytes(self, session_id, intent_id):
+        return self._current_intent(session_id, intent_id)["request"]
+
+    def assert_current_program_job(self, session_id, intent_id):
+        self._current_intent(session_id, intent_id)
+
     def _candidate(self, session_id, intent_id, candidate_id):
         self._intent(session_id, intent_id)
         _token(candidate_id)
@@ -127,19 +133,13 @@ class ProgramStore(DeploymentStore):
         _token(receipt_id)
         with self._transaction():
             intent = self._current_intent(session_id, intent_id, published=True)
-            receipt = self._db.execute("SELECT * FROM program_runs WHERE receipt_id=?", (receipt_id,)).fetchone()
-            if receipt is None:
-                raise OwnershipError("Unknown execution receipt")
-            row, report = self._candidate(session_id, intent_id, receipt["candidate_id"])
-            if (not receipt["succeeded"] or receipt["candidate_sha256"] != report["sha256"]
-                    or receipt["runner_sha256"] != expected_runner_sha256
-                    or digest(receipt["scenario"]) != receipt["scenario_sha256"]):
-                raise IntegrityError("Receipt does not certify this exact candidate")
+            row, report = self._verified_receipt(session_id, intent_id, receipt_id, expected_runner_sha256)
             prior = self._db.execute("SELECT * FROM deployments WHERE intent_id=?", (intent_id,)).fetchone()
             if prior:
                 if prior["sha256"] != report["sha256"] or prior["body"] != row["body"]:
                     raise ConflictError("A different candidate already completed this job")
                 return self._envelope(self._checked_deployment(prior["deployment_id"]))
+            self._check_program_publication(intent)
             deployment_id = "deployment_" + uuid.uuid4().hex
             self._db.execute("INSERT INTO deployments VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                              (deployment_id, intent_id, session_id, intent["device_id"], intent["sequence"],
@@ -148,3 +148,25 @@ class ProgramStore(DeploymentStore):
             self._db.execute("UPDATE intents SET status='published' WHERE intent_id=?", (intent_id,))
             self._db.execute("UPDATE devices SET desired_id=? WHERE device_id=?", (deployment_id, intent["device_id"]))
             return self._envelope(self._checked_deployment(deployment_id))
+
+    def _check_program_publication(self, intent):
+        """Subclass target check inside the exact-byte publication transaction."""
+
+    def _verified_receipt(self, session_id, intent_id, receipt_id, runner_sha256):
+        receipt = self._db.execute("SELECT * FROM program_runs WHERE receipt_id=?", (receipt_id,)).fetchone()
+        if receipt is None:
+            raise OwnershipError("Unknown execution receipt")
+        row, report = self._candidate(session_id, intent_id, receipt["candidate_id"])
+        if (not receipt["succeeded"] or receipt["candidate_sha256"] != report["sha256"]
+                or receipt["runner_sha256"] != runner_sha256
+                or digest(receipt["scenario"]) != receipt["scenario_sha256"]):
+            raise IntegrityError("Receipt does not certify this exact candidate")
+        return row, report
+
+    def select_program(self, session_id, intent_id, receipt_id, *, expected_runner_sha256):
+        """Resolve a trusted selection without publishing or changing desired."""
+        _token(receipt_id)
+        with self._transaction():
+            self._current_intent(session_id, intent_id)
+            row, report = self._verified_receipt(session_id, intent_id, receipt_id, expected_runner_sha256)
+            return {"receipt_id": receipt_id, "candidate_id": row["candidate_id"], "sha256": report["sha256"]}

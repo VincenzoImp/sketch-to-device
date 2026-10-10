@@ -52,7 +52,7 @@ class Client:
             self.gets.append(path)
             return self.polls.pop(0)
         self.cancelled.append((path, self.deadline))
-        return self.cancellation or {"id": path.split("/")[-2], "status": "cancelled"}
+        return self.cancellation or {"id": path.rsplit("/", 1)[-1].removesuffix(":cancel"), "status": "cancelled"}
 
 
 class ProtocolChecks(unittest.TestCase):
@@ -101,7 +101,7 @@ class ProtocolChecks(unittest.TestCase):
         result, _, _ = self.run_probe(client, checker=checker, clock=lambda: now[0])
         self.assertEqual(result["error_code"], "deadline")
         self.assertEqual(len(client.sent), 1)
-        self.assertEqual(client.cancelled, [("/v1beta/interactions/first/cancel", 600)])
+        self.assertEqual(client.cancelled, [("/v1beta/interactions/first:cancel", 600)])
         self.assertEqual(result["cancellation"], "confirmed")
 
     def test_poll_identity_mismatch_retains_requested_cancellation_id(self):
@@ -109,7 +109,7 @@ class ProtocolChecks(unittest.TestCase):
         result, _, calls = self.run_probe(client)
         self.assertEqual(result["error_code"], "identity_changed")
         self.assertEqual(calls, [])
-        self.assertEqual(client.cancelled, [("/v1beta/interactions/first/cancel", 10)])
+        self.assertEqual(client.cancelled, [("/v1beta/interactions/first:cancel", 10)])
 
     def test_early_failure_cleanup_has_nine_second_budget(self):
         client = Client([response("requires_action", steps=[call(name="shell")])])
@@ -121,7 +121,7 @@ class ProtocolChecks(unittest.TestCase):
     def test_lost_continuation_response_preserves_identity_and_unknown_remote_state(self):
         client = Client([response("requires_action", steps=[call()]), p.ProviderError("provider_transport")])
         result, trace, _ = self.run_probe(client)
-        self.assertEqual(client.cancelled[0][0], "/v1beta/interactions/first/cancel")
+        self.assertEqual(client.cancelled[0][0], "/v1beta/interactions/first:cancel")
         self.assertEqual(result["cancellation"], "unconfirmed")
         self.assertTrue(result["remote_job_may_continue"])
         self.assertEqual(trace["resume_state"]["last_known_interaction_id"], "first")
@@ -131,7 +131,7 @@ class ProtocolChecks(unittest.TestCase):
         client = Client([response("requires_action", steps=[call()]), response("unknown", "second")])
         result, _, _ = self.run_probe(client)
         self.assertEqual(result["error_code"], "invalid_state")
-        self.assertEqual(client.cancelled, [("/v1beta/interactions/second/cancel", 10)])
+        self.assertEqual(client.cancelled, [("/v1beta/interactions/second:cancel", 10)])
 
     def test_environment_mismatch_is_not_success(self):
         client = Client([response("requires_action", steps=[call()]),

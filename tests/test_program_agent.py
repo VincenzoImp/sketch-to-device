@@ -58,7 +58,7 @@ class Client:
         self.cancelled.append((path, self.deadline))
         if isinstance(self.cancellation, Exception):
             raise self.cancellation
-        return self.cancellation or {"id": path.split("/")[-2], "status": "cancelled"}
+        return self.cancellation or {"id": path.rsplit("/", 1)[-1].removesuffix(":cancel"), "status": "cancelled"}
 
 
 class ProgramAgentChecks(unittest.TestCase):
@@ -103,7 +103,7 @@ class ProgramAgentChecks(unittest.TestCase):
         self.assertEqual(continuation["input"][1]["result"][1]["type"], "image")
         self.assertEqual(self.journal()["selection"], SELECTION)
         self.assertEqual(self.journal()["result"], "selected")
-        self.assertEqual(client.cancelled, [("/v1beta/interactions/second/cancel", 10)])
+        self.assertEqual(client.cancelled, [("/v1beta/interactions/second:cancel", 10)])
         self.assertEqual(self.journal()["cancellation"], "confirmed")
 
     def test_only_submit_callback_can_select_not_provider_prose(self):
@@ -173,7 +173,7 @@ class ProgramAgentChecks(unittest.TestCase):
             return result()
         client = Client([response(calls=[call()])])
         self.assert_fails(client, "deadline", broker=broker, clock=lambda: now[0])
-        self.assertEqual(client.cancelled, [("/v1beta/interactions/first/cancel", 601)])
+        self.assertEqual(client.cancelled, [("/v1beta/interactions/first:cancel", 601)])
         self.assertEqual(len(client.sent), 1)
 
     def test_late_submission_retains_receipt_but_cannot_return_selection(self):
@@ -198,12 +198,12 @@ class ProgramAgentChecks(unittest.TestCase):
             self.run_agent(client, broker=broker)
         self.assertEqual(self.journal()["result"], "interrupted")
         self.assertEqual(self.journal()["cancellation"], "confirmed")
-        self.assertEqual(client.cancelled, [("/v1beta/interactions/first/cancel", 10)])
+        self.assertEqual(client.cancelled, [("/v1beta/interactions/first:cancel", 10)])
 
     def test_bad_poll_identity_cancels_requested_handle(self):
         client = Client([response("in_progress")], [response(identity="unexpected", calls=[call()])])
         self.assert_fails(client)
-        self.assertEqual(client.cancelled[0], ("/v1beta/interactions/first/cancel", 10))
+        self.assertEqual(client.cancelled[0], ("/v1beta/interactions/first:cancel", 10))
 
     def test_lost_continuation_retains_handle_and_uncertainty(self):
         client = Client([response(calls=[call()]), p.ProviderError("provider_transport")])
@@ -215,7 +215,7 @@ class ProgramAgentChecks(unittest.TestCase):
     def test_malformed_new_status_cancels_new_known_id(self):
         client = Client([response(calls=[call()]), response("invalid", "new")])
         self.assert_fails(client)
-        self.assertEqual(client.cancelled[0][0], "/v1beta/interactions/new/cancel")
+        self.assertEqual(client.cancelled[0][0], "/v1beta/interactions/new:cancel")
 
     def test_changed_environment_fails_before_next_tool(self):
         client = Client([response(calls=[call()]),

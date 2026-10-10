@@ -12,6 +12,9 @@ function showError(message) { $('#error').textContent = message; $('#error').hid
 const errors = {
   authentication_required:'Open your private workspace link to connect.',
   generation_busy:'An app is already being built. Please wait for it to finish.',
+  capabilities_missing:'The device has not connected with its app runtime yet. Keep it powered on and connected.',
+  capabilities_stale:'The device connection needs to refresh before a new app can start. Keep the device online.',
+  capabilities_incompatible:'The device needs the programmable runtime update before it can receive this app.',
   generation_stalled:'The app builder repeated the same failed result. Your current app is unchanged. Try describing what should happen differently.',
   input_required:'Describe your app or add a recording.',
   unsupported_request:'This idea needs features that are not available on your device yet. Retrying the same request will not add them. Your current app is still available.',
@@ -41,7 +44,7 @@ const errors = {
   media_tools:'Media processing is unavailable on the server. Try a text request while it is checked.',
   input:'Describe your app or add a supported image or recording.',
   repair_limit:'The app did not pass its checks. Try a simpler description.',
-  tool_protocol:'The app did not pass its checks. Try a simpler description.'
+  tool_protocol:'The app builder could not complete its tool workflow. Your current app is unchanged.'
 };
 function failureMessage(code, reason) {
   if (reason === 'token_budget_exhausted') return 'The app builder reached its work limit. Your current app is unchanged. You can try again.';
@@ -62,6 +65,7 @@ async function connect() {
   try { const data = await request('/api/session'); updateDevice(data.device_online); }
   catch (error) { $('#connect').hidden = false; $('#workspace').hidden = true; showError(error.message); return; }
   if (sessionStorage.getItem('pending-request') || sessionStorage.getItem('last-job')) await recover();
+  else await pollActive();
 }
 function updateDevice(online) {
   $('#device-status').textContent = online ? 'Connected · ready to receive' : 'Paired · waiting for connection';
@@ -110,13 +114,13 @@ $('#record').onclick = async () => {
   } catch (_) { if (captureStream) captureStream.getTracks().forEach(track => track.stop()); showError('Microphone access was unavailable. Add a recording or type your idea.'); }
 };
 function progress(stage, detail, deployment, diagnostics) {
-  const titles = {preparing:'Preparing your idea',uploading:'Sending your sketch',transcribing:'Listening to your idea',understanding:'Reading your sketch',generating:'Building your app',repairing:'Improving your app',validating:'Checking the app',simulating:'Trying the app',ready:'On its way to your device',active:'Your idea is alive.',failed:'Your app could not be created',superseded:'A newer idea is being built'};
+  const titles = {preparing:'Preparing your idea',uploading:'Sending your sketch',transcribing:'Listening to your idea',understanding:'Reading your sketch',generating:'Building your app',repairing:'Improving your app',testing:'Trying your app',validating:'Checking the app',simulating:'Trying the app',waiting_device:'Your app is saved',ready:'On its way to your device',active:'Your idea is alive.',recovered:'Your device recovered',failed:'Your app could not be created',superseded:'A newer idea is being built'};
   const unsupported = stage === 'failed' && detail === 'unsupported_request';
   $('#progress').hidden = false; $('#progress-title').textContent = unsupported ? 'This idea is not supported yet' : titles[stage] || 'Working on your app';
   $('#progress-detail').textContent = stage === 'failed' ? failureMessage(detail, diagnostics?.reason) : detail || '';
-  $('#progress-label').textContent = unsupported ? 'NOT SUPPORTED YET' : stage === 'failed' ? 'APP NOT CREATED' : stage === 'active' ? 'RUNNING ON YOUR DEVICE' : 'MAKING YOUR APP';
-  const phase = ['ready','active'].includes(stage) ? 2 : ['generating','repairing','validating','simulating'].includes(stage) ? 1 : 0;
-  [...$('#steps').children].forEach((step, index) => { step.classList.toggle('done', index < phase || stage === 'active'); step.classList.toggle('current', index === phase && !['active','failed','superseded'].includes(stage)); });
+  $('#progress-label').textContent = unsupported ? 'NOT SUPPORTED YET' : stage === 'failed' ? 'APP NOT CREATED' : stage === 'recovered' ? 'APP RECOVERED' : stage === 'active' ? 'RUNNING ON YOUR DEVICE' : 'MAKING YOUR APP';
+  const phase = ['ready','active','waiting_device','recovered'].includes(stage) ? 2 : ['generating','repairing','testing','validating','simulating'].includes(stage) ? 1 : 0;
+  [...$('#steps').children].forEach((step, index) => { step.classList.toggle('done', index < phase || stage === 'active'); step.classList.toggle('current', index === phase && !['active','failed','superseded','recovered'].includes(stage)); });
   $('#identity').textContent = deployment ? `${deployment.manifest.app_id} · v${deployment.manifest.version} · ${deployment.manifest.sha256.slice(0,12)}` : '';
 }
 const pause = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -130,6 +134,7 @@ async function acceptPending() {
   const frozen = sessionStorage.getItem('pending-request');
   if (!frozen) return;
   const result = await request('/api/generate', {method:'POST',headers:{'Content-Type':'application/json'},body:frozen});
+  sessionStorage.removeItem('active-job');
   sessionStorage.setItem('last-job', result.job_id); sessionStorage.removeItem('pending-request');
 }
 function reportFailure(error) {
@@ -173,14 +178,28 @@ async function watch(identifier) {
   let awaitingDevice = false;
   while (Date.now() < deadline) {
     const job = await request(`/api/jobs/${encodeURIComponent(identifier)}`);
-    awaitingDevice = job.stage === 'ready';
+    awaitingDevice = ['ready','waiting_device'].includes(job.stage);
     progress(job.stage, job.detail, job.deployment, job.diagnostics); updateDevice(job.device_online);
-    if (['active','failed','superseded'].includes(job.stage)) { sessionStorage.removeItem('last-job'); return; }
+    if (['active','failed','superseded','recovered'].includes(job.stage)) {
+      if (job.stage === 'active') sessionStorage.setItem('active-job', identifier);
+      sessionStorage.removeItem('last-job'); return;
+    }
     await pause(1500);
   }
   showError(awaitingDevice
     ? 'Your app is waiting for the device. Check its connection, then tap Resume request to see its status.'
     : 'This request is still in progress. Tap Resume request to reconnect to it.');
 }
+async function pollActive() {
+  const identifier = sessionStorage.getItem('active-job');
+  if (!identifier || working) return;
+  try {
+    const job = await request(`/api/jobs/${encodeURIComponent(identifier)}`);
+    // A response for the previous app must not overwrite a newly started job.
+    if (working || sessionStorage.getItem('active-job') !== identifier) return;
+    progress(job.stage, job.detail, job.deployment, job.diagnostics); updateDevice(job.device_online);
+    if (['recovered','failed','superseded'].includes(job.stage)) sessionStorage.removeItem('active-job');
+  } catch (_) { /* Keep the identity and retry after a transient connection loss. */ }
+}
 connect();
-setInterval(async () => { if (token && !working) { try { updateDevice((await request('/api/session')).device_online); } catch (_) {} } }, 5000);
+setInterval(async () => { if (token && !working) { try { updateDevice((await request('/api/session')).device_online); await pollActive(); } catch (_) {} } }, 5000);

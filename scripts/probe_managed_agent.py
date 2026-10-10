@@ -87,7 +87,7 @@ def allowed_route(method, path):
     identifier = r"[A-Za-z0-9_-]{1,4096}"
     if method == "POST":
         return path == "/v1beta/interactions" or bool(re.fullmatch(
-            r"/v1beta/interactions/" + identifier + r"/cancel", path))
+            r"/v1beta/interactions/" + identifier + r":cancel", path))
     if method == "GET":
         return bool(re.fullmatch(r"/v1beta/interactions/" + identifier, path) or re.fullmatch(
             r"/v1beta/environments/" + identifier + r"/files(?:\?recursive=true|/"
@@ -327,7 +327,7 @@ def run_job(key, timeout, emit=None, transport_factory=Transport, max_total_toke
             report["cancellation"] = "unconfirmed"
             try:
                 transport.deadline = final_deadline
-                cancelled = transport.json("POST", "/v1beta/interactions/" + identifier + "/cancel")
+                cancelled = transport.json("POST", "/v1beta/interactions/" + identifier + ":cancel")
                 cancelled_id, cancelled_state = interaction_state(cancelled, identifier)
                 if cancelled_state == "cancelled":
                     report["cancellation"] = "confirmed"
@@ -368,7 +368,7 @@ def self_test():
         def json(self, method, path, payload=None):
             self.requests_sent += 1
             self.routes.append((method, path))
-            if path.endswith("/cancel"):
+            if path.endswith(":cancel"):
                 return dict(self.interaction, status="cancelled")
             if "/files" in path:
                 return {"files": [{"type": "FILE", "path": "workspace/" + ARTIFACT_NAME}]}
@@ -426,6 +426,24 @@ def self_test():
             with self.assertRaisesRegex(ManagedFailure, "artifact_path_ambiguous"):
                 select_artifact({"files": [{"type": "FILE", "path": ARTIFACT_NAME}] * 2})
 
+        def test_cancel_route_requires_post_colon_action_and_valid_id(self):
+            path = "/v1beta/interactions/test_Interaction-123:cancel"
+            self.assertTrue(allowed_route("POST", path))
+            invalid = [("GET", path), ("DELETE", path),
+                       ("POST", "/v1beta/interactions/test_Interaction-123/cancel"),
+                       ("POST", "/v1beta/interactions/:cancel"),
+                       ("POST", "/v1beta/interactions/../other:cancel"),
+                       ("POST", "/v1beta/interactions/id%3Acancel"),
+                       ("POST", path + "?redirect=other"),
+                       ("POST", "/v1beta/interactions/" + "i" * 4097 + ":cancel")]
+            for method, route in invalid:
+                with self.subTest(method=method, path=route):
+                    self.assertFalse(allowed_route(method, route))
+                    with mock.patch.object(providers, "network_preflight") as preflight, \
+                            self.assertRaisesRegex(ManagedFailure, "invalid_route"):
+                        Transport("synthetic", time.monotonic() + 1).send(method, route, {})
+                    preflight.assert_not_called()
+
         def test_incomplete_state_never_downloads_or_passes(self):
             transport = FakeTransport("unused", 0)
             transport.interaction["status"] = "incomplete"
@@ -462,7 +480,7 @@ def self_test():
             self.assertEqual(report["result"], "job_deadline")
             self.assertEqual(report["cancellation"], "confirmed")
             self.assertFalse(report["remote_job_may_continue"])
-            self.assertTrue(transport.routes[-1][1].endswith("/cancel"))
+            self.assertTrue(transport.routes[-1][1].endswith(":cancel"))
 
         def test_network_failure_sends_no_authenticated_request(self):
             with mock.patch.object(providers, "network_preflight", return_value=(None, {"result": "dns_unavailable"})) as preflight:

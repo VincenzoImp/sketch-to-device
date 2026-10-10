@@ -52,7 +52,7 @@ This is a replacement of the AppSpec-oriented authoring pipeline, with an extens
 | Delivery | Preserve ordering, identity/hash checks and staging; extend format dispatch and durable recovery | Ordinary app changes require no firmware rebuild; failed candidates keep the working app |
 | Companion | Show upload, transcription, coding/testing, device wait, activation and subsequent recovery accurately | One Generate and install action remains enough; generated, installed and currently healthy are different facts |
 
-Proposed custom tools are `prepare_uploaded_asset`, `run_app` and `submit_app`; optional SDK lookup and image-generation tools can be added. These are design names, not implemented endpoints. Register each with real argument validation and caller/job ownership. Resolve tool call IDs and continuation through the actual provider protocol. Persist provider handles, job state and tool receipts so interruption does not create a second uncontrolled run.
+The initial custom tools are `prepare_uploaded_asset`, `run_app` and `submit_app`; optional SDK lookup and image-generation tools can be added. Their broker and real managed continuation now have host evidence in [the ledger](12-work-ledger.md); this does not establish production or physical activation. Register each with real argument validation and caller/job ownership. Resolve tool call IDs and continuation through the actual provider protocol. Persist provider handles, job state and tool receipts so interruption does not create a second uncontrolled run.
 
 These three functions are the initial bridge to trusted project services, not the entire agent toolset or a ceiling on future tools. Managed file/command/search capabilities remain available. Add tools through explicit schemas and capability discovery when a real task needs them; do not require the agent to follow a fixed sequence of development commands. Useful extensions include image transformation/generation, documentation retrieval and further runtime diagnostics. Verify provider support and implementation for each addition instead of advertising an imaginary universal tool API.
 
@@ -256,7 +256,7 @@ Do not migrate to a new IDF/LVGL framework, implement a browser, permit raw gene
 
 ## Immediate handoff
 
-Historical planning handoff below. D30 implementation has since resumed: the repaired public G0 probe passed a real function/image continuation, and package/assets/store/shared-core slices passed scoped review. Use the [current ledger](12-work-ledger.md) for live assignments and the next authored-code integration gate. The ignored draft is not the accepted tool.
+Historical planning handoff below. D30 implementation has since resumed: the repaired public G0 probe passed a real function/image continuation, and package/assets/store/shared-core slices passed scoped review. Use the [current ledger](12-work-ledger.md) for live assignments and the physical delivery/recovery gate. The ignored draft is not the accepted tool.
 
 The preceding audit was published at`d223469e89f2fca6057ff97c01598fa02ede3c53`: all158 reviewed file blobs and remote main were checked directly after full access became available. The revised plan and13-file document reconciliation passed independent agent/system review; public context and diff checks passed158 files. Its own publication follows the reviewed checkpoint workflow recorded in the ledger. No product generation, service restart or firmware change has occurred during this reassessment.
 

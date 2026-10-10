@@ -827,7 +827,7 @@ def _generate(prompt, snapshots, progress, deadline, client, timing, profile):
             # One best-effort cancellation within the original job's reserved time.
             try:
                 client.deadline = final_deadline
-                cancellation = client.google("POST", "/v1beta/interactions/" + interaction_id + "/cancel")
+                cancellation = client.google("POST", "/v1beta/interactions/" + interaction_id + ":cancel")
                 diagnostic["cancellation"] = ("confirmed" if isinstance(cancellation, dict)
                     and cancellation.get("id") == interaction_id and cancellation.get("status") == "cancelled"
                     else "unconfirmed")

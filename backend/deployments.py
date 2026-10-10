@@ -105,6 +105,11 @@ class DeploymentStore:
                 error_code TEXT NOT NULL,
                 UNIQUE(deployment_id, status, error_code)
             );
+            CREATE TABLE IF NOT EXISTS deployment_quarantine (
+                deployment_id TEXT PRIMARY KEY REFERENCES deployments(deployment_id),
+                device_id TEXT NOT NULL REFERENCES devices(device_id),
+                recovery_seq INTEGER NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS program_versions (
                 session_id TEXT NOT NULL,
                 app_id TEXT NOT NULL,
@@ -209,25 +214,30 @@ class DeploymentStore:
         if type(request) is not bytes or not 1 <= len(request) <= 65536:
             raise StoreError("Request snapshot must contain 1..65536 bytes")
         with self._transaction():
-            device = self._device(device_id, session_id)
-            prior = self._db.execute("SELECT * FROM intents WHERE session_id=? AND idempotency_key=?",
-                                     (session_id, idempotency_key)).fetchone()
-            if prior is not None:
-                if prior["device_id"] != device_id or prior["request"] != request:
-                    raise ConflictError("Idempotency key was used for a different request")
-                return self._intent_result(prior)
-            if require_idle and device["current_intent_id"]:
-                current = self._intent(session_id, device["current_intent_id"])
-                if current["status"] == "accepted":
-                    raise ConflictError("Generation is in progress")
-            self._supersede(device)
-            intent_id = "intent_" + uuid.uuid4().hex
-            sequence = device["sequence"] + 1
-            self._db.execute("INSERT INTO intents VALUES (?,?,?,?,?,?,?,NULL)",
-                             (intent_id, session_id, device_id, idempotency_key, request, sequence, "accepted"))
-            self._db.execute("UPDATE devices SET sequence=?,current_intent_id=?,desired_id=NULL WHERE device_id=?",
-                             (sequence, intent_id, device_id))
-            return self._intent_result(self._intent(session_id, intent_id))
+            return self._accept_intent_locked(session_id, device_id, idempotency_key, request,
+                                              require_idle=require_idle)
+
+    def _accept_intent_locked(self, session_id, device_id, idempotency_key, request, *, require_idle=False):
+        """Validated caller, inside the same transaction as optional target checks."""
+        device = self._device(device_id, session_id)
+        prior = self._db.execute("SELECT * FROM intents WHERE session_id=? AND idempotency_key=?",
+                                 (session_id, idempotency_key)).fetchone()
+        if prior is not None:
+            if prior["device_id"] != device_id or prior["request"] != request:
+                raise ConflictError("Idempotency key was used for a different request")
+            return self._intent_result(prior)
+        if require_idle and device["current_intent_id"]:
+            current = self._intent(session_id, device["current_intent_id"])
+            if current["status"] == "accepted":
+                raise ConflictError("Generation is in progress")
+        self._supersede(device)
+        intent_id = "intent_" + uuid.uuid4().hex
+        sequence = device["sequence"] + 1
+        self._db.execute("INSERT INTO intents VALUES (?,?,?,?,?,?,?,NULL)",
+                         (intent_id, session_id, device_id, idempotency_key, request, sequence, "accepted"))
+        self._db.execute("UPDATE devices SET sequence=?,current_intent_id=?,desired_id=NULL WHERE device_id=?",
+                         (sequence, intent_id, device_id))
+        return self._intent_result(self._intent(session_id, intent_id))
 
     def get_intent(self, session_id, intent_id):
         return self._intent_result(self._intent(session_id, intent_id))
@@ -302,7 +312,11 @@ class DeploymentStore:
             row = self._checked_deployment(deployment_id)
             if row["device_id"] != authenticated_device_id:
                 raise OwnershipError("Deployment belongs to another device")
+            self._check_package_download(device, row)
             return row["body"]
+
+    def _check_package_download(self, device, row):
+        """Subclass compatibility check; called inside the download transaction."""
 
     def active_for_session(self, session_id, device_id):
         """Return last accepted active identity, not proof of current physical health."""
@@ -336,9 +350,11 @@ class DeploymentStore:
                 raise IntegrityError("Acknowledgment identity does not match its deployment")
             recorded = self._db.execute("INSERT OR IGNORE INTO acknowledgments(deployment_id,status,error_code) VALUES (?,?,?)",
                                         (row["deployment_id"], ack["status"], error_code)).rowcount
+            quarantined = self._db.execute("SELECT 1 FROM deployment_quarantine WHERE deployment_id=?",
+                                           (row["deployment_id"],)).fetchone() is not None
             current = (device["desired_id"] == row["deployment_id"]
                        and device["current_intent_id"] == row["intent_id"]
-                       and device["session_id"] == row["session_id"])
+                       and device["session_id"] == row["session_id"] and not quarantined)
             if current and row["status"] not in ("active", "failed"):
                 if ack["status"] == "failed":
                     self._db.execute("UPDATE deployments SET status='failed' WHERE deployment_id=?", (row["deployment_id"],))
