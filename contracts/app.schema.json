@@ -1,0 +1,487 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "app_id": {
+      "$ref": "#/$defs/id"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[ -~]+(?![\\s\\S])",
+      "minLength": 1,
+      "maxLength": 48
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "integer",
+          "const": 320
+        },
+        "height": {
+          "type": "integer",
+          "const": 480
+        },
+        "orientation": {
+          "const": "portrait"
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "orientation"
+      ],
+      "additionalProperties": false
+    },
+    "theme": {
+      "type": "object",
+      "properties": {
+        "palette": {
+          "enum": [
+            "dark_green",
+            "light_blue"
+          ]
+        },
+        "font_size": {
+          "const": "medium"
+        }
+      },
+      "required": [
+        "palette",
+        "font_size"
+      ],
+      "additionalProperties": false
+    },
+    "initial_screen": {
+      "$ref": "#/$defs/id"
+    },
+    "state": {
+      "type": "object",
+      "maxProperties": 16,
+      "propertyNames": {
+        "$ref": "#/$defs/id"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/stateValue"
+      }
+    },
+    "screens": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/screen"
+      },
+      "minItems": 1,
+      "maxItems": 6
+    }
+  },
+  "required": [
+    "schema_version",
+    "app_id",
+    "version",
+    "name",
+    "target",
+    "theme",
+    "initial_screen",
+    "state",
+    "screens"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AppSpec v1",
+  "$comment": "Strict UTF-8 byte/depth/duplicate-key/integer-token parsing, references, total counts, reachability, and layout require runtime.validation; JSON Schema alone is insufficient.",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,47}(?![\\s\\S])",
+      "maxLength": 48
+    },
+    "text": {
+      "type": "string",
+      "pattern": "^[ -~]+(?![\\s\\S])",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "int32": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "stateValue": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "$ref": "#/$defs/int32"
+        }
+      ]
+    },
+    "action": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "navigate"
+            },
+            "screen_id": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "required": [
+            "type",
+            "screen_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "set"
+            },
+            "state_key": {
+              "$ref": "#/$defs/id"
+            },
+            "value": {
+              "$ref": "#/$defs/stateValue"
+            }
+          },
+          "required": [
+            "type",
+            "state_key",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "increment"
+            },
+            "state_key": {
+              "$ref": "#/$defs/id"
+            },
+            "amount": {
+              "$ref": "#/$defs/int32"
+            }
+          },
+          "required": [
+            "type",
+            "state_key",
+            "amount"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "toggle"
+            },
+            "state_key": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "required": [
+            "type",
+            "state_key"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "timer_start"
+            },
+            "widget_id": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "required": [
+            "type",
+            "widget_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "timer_pause"
+            },
+            "widget_id": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "required": [
+            "type",
+            "widget_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "timer_reset"
+            },
+            "widget_id": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "required": [
+            "type",
+            "widget_id"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "completionAction": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "navigate"
+            },
+            "screen_id": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "required": [
+            "type",
+            "screen_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "set"
+            },
+            "state_key": {
+              "$ref": "#/$defs/id"
+            },
+            "value": {
+              "$ref": "#/$defs/stateValue"
+            }
+          },
+          "required": [
+            "type",
+            "state_key",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "increment"
+            },
+            "state_key": {
+              "$ref": "#/$defs/id"
+            },
+            "amount": {
+              "$ref": "#/$defs/int32"
+            }
+          },
+          "required": [
+            "type",
+            "state_key",
+            "amount"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "toggle"
+            },
+            "state_key": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "required": [
+            "type",
+            "state_key"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "widget": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "type": {
+              "const": "label"
+            },
+            "text": {
+              "$ref": "#/$defs/text"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "type": {
+              "const": "button"
+            },
+            "text": {
+              "$ref": "#/$defs/text"
+            },
+            "on_press": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/action"
+              },
+              "minItems": 0,
+              "maxItems": 4
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "text",
+            "on_press"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "type": {
+              "const": "counter"
+            },
+            "state_key": {
+              "$ref": "#/$defs/id"
+            },
+            "text": {
+              "$ref": "#/$defs/text"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "state_key"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "type": {
+              "const": "toggle"
+            },
+            "state_key": {
+              "$ref": "#/$defs/id"
+            },
+            "text": {
+              "$ref": "#/$defs/text"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "state_key",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "type": {
+              "const": "timer"
+            },
+            "duration_seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3600
+            },
+            "on_complete": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/completionAction"
+              },
+              "minItems": 0,
+              "maxItems": 4
+            },
+            "text": {
+              "$ref": "#/$defs/text"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "duration_seconds",
+            "on_complete"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "screen": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "widgets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/widget"
+          },
+          "minItems": 0,
+          "maxItems": 8
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "widgets"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

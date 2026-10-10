@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "app_id": "tap_sprint",
+  "version": 1,
+  "name": "Tap Sprint",
+  "target": {
+    "width": 320,
+    "height": 480,
+    "orientation": "portrait"
+  },
+  "theme": {
+    "palette": "dark_green",
+    "font_size": "medium"
+  },
+  "initial_screen": "ready",
+  "state": {
+    "score": 0
+  },
+  "screens": [
+    {
+      "id": "ready",
+      "title": "Tap Sprint",
+      "widgets": [
+        {
+          "id": "intro",
+          "type": "label",
+          "text": "Tap for ten seconds."
+        },
+        {
+          "id": "start",
+          "type": "button",
+          "text": "Start",
+          "on_press": [
+            {
+              "type": "set",
+              "state_key": "score",
+              "value": 0
+            },
+            {
+              "type": "timer_reset",
+              "widget_id": "round_timer"
+            },
+            {
+              "type": "timer_start",
+              "widget_id": "round_timer"
+            },
+            {
+              "type": "navigate",
+              "screen_id": "play"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "play",
+      "title": "Go!",
+      "widgets": [
+        {
+          "id": "score_live",
+          "type": "counter",
+          "state_key": "score",
+          "text": "Score"
+        },
+        {
+          "id": "round_timer",
+          "type": "timer",
+          "duration_seconds": 10,
+          "on_complete": [
+            {
+              "type": "navigate",
+              "screen_id": "result"
+            }
+          ]
+        },
+        {
+          "id": "tap",
+          "type": "button",
+          "text": "Tap!",
+          "on_press": [
+            {
+              "type": "increment",
+              "state_key": "score",
+              "amount": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "title": "Time is up!",
+      "widgets": [
+        {
+          "id": "score_final",
+          "type": "counter",
+          "state_key": "score",
+          "text": "Final score"
+        },
+        {
+          "id": "again",
+          "type": "button",
+          "text": "Play again",
+          "on_press": [
+            {
+              "type": "set",
+              "state_key": "score",
+              "value": 0
+            },
+            {
+              "type": "timer_reset",
+              "widget_id": "round_timer"
+            },
+            {
+              "type": "timer_start",
+              "widget_id": "round_timer"
+            },
+            {
+              "type": "navigate",
+              "screen_id": "play"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

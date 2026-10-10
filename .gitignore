@@ -1,0 +1,29 @@
+# Original event correspondence includes temporary account credentials.
+/*.pdf
+.env
+.env.*
+!.env.example
+secrets/
+private/
+uploads/
+runtime-data/
+artifacts/
+.tools/
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+dist/
+build/
+managed_components/
+.DS_Store
+
+# Local provider credentials and machine configuration.
+.aws/
+*.pem
+*.key
+sdkconfig.local
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/sdkconfig.private
+firmware/sdkconfig.private.old

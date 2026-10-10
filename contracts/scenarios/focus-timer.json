@@ -1,0 +1,74 @@
+{
+  "scenario_version": 1,
+  "steps": [
+    {
+      "op": "press",
+      "at_ms": 0,
+      "widget_id": "begin"
+    },
+    {
+      "op": "press",
+      "at_ms": 2000,
+      "widget_id": "pause",
+      "expect": {
+        "timers": {
+          "focus_timer": {
+            "status": "paused",
+            "remaining_ms": 3000
+          }
+        }
+      }
+    },
+    {
+      "op": "advance",
+      "at_ms": 10000,
+      "expect": {
+        "screen": "focus",
+        "state": {
+          "done": false
+        }
+      }
+    },
+    {
+      "op": "press",
+      "at_ms": 10000,
+      "widget_id": "begin"
+    },
+    {
+      "op": "enter_shell",
+      "at_ms": 11000
+    },
+    {
+      "op": "exit_shell",
+      "at_ms": 30000,
+      "expect": {
+        "timers": {
+          "focus_timer": {
+            "status": "running",
+            "remaining_ms": 2000
+          }
+        }
+      }
+    },
+    {
+      "op": "advance",
+      "at_ms": 32000,
+      "expect": {
+        "screen": "finished",
+        "state": {
+          "done": true
+        }
+      }
+    },
+    {
+      "op": "press",
+      "at_ms": 32001,
+      "widget_id": "done_toggle",
+      "expect": {
+        "state": {
+          "done": false
+        }
+      }
+    }
+  ]
+}

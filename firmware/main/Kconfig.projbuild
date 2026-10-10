@@ -1,0 +1,17 @@
+menu "Sketch to Device private configuration"
+    config SKETCH_WIFI_SSID
+        string "Wi-Fi SSID"
+        default ""
+    config SKETCH_WIFI_PASSWORD
+        string "Wi-Fi password"
+        default ""
+    config SKETCH_BACKEND_URL
+        string "Backend HTTPS origin without trailing slash"
+        default ""
+    config SKETCH_DEVICE_ID
+        string "Paired device ID"
+        default ""
+    config SKETCH_DEVICE_TOKEN
+        string "Private device bearer token"
+        default ""
+endmenu

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101712">
+  <title>Sketch to Device</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header><a class="brand" href="/">s/d<span>Sketch to Device</span></a><span class="tag">FROM IDEA TO INTERACTION</span></header>
+  <main>
+    <section class="intro"><p class="eyebrow">YOUR NEXT LITTLE INVENTION</p><h1>Say it. Sketch it.<br><em>Make it real.</em></h1><p>Turn an idea into a touchable app. Show a sketch, explain what it does, and watch your device come to life.</p></section>
+    <section id="connect" class="card" hidden><h2>Connect your workspace</h2><p>Open your private setup link, or enter your workspace access token.</p><form id="connect-form"><label for="access-token">Access token</label><input id="access-token" type="password" autocomplete="off" required><button type="submit">Connect</button></form></section>
+    <section class="card workspace" id="workspace" hidden>
+      <div class="device"><span class="device-icon" aria-hidden="true">▣</span><div><strong>Waveshare P4</strong><span id="device-status">Checking connection…</span></div><span id="device-dot" class="dot"></span></div>
+      <form id="create-form">
+        <label for="prompt">What should your device do?</label>
+        <textarea id="prompt" maxlength="6000" rows="5" placeholder="Make a 10-second tap game. Show a big Tap button, a live score, a countdown, and a Play again button."></textarea>
+        <div class="attachments">
+          <label class="attach" for="files">＋ Add sketch or recording<input id="files" type="file" accept="image/jpeg,image/png,image/webp,audio/*,video/mp4,video/webm,video/quicktime" multiple></label>
+          <button type="button" id="record" class="secondary">● Record voice</button>
+        </div>
+        <p class="hint">Up to 3 files · 12 MB each, 20 MB total · recordings up to 30 seconds · English voice</p>
+        <ul id="file-list" class="file-list"></ul>
+        <button id="generate" type="submit" class="primary">Generate and install <span aria-hidden="true">↗</span></button>
+        <p class="small">One action. Your verified app installs automatically.</p>
+      </form>
+    </section>
+    <section id="progress" class="card progress" hidden aria-live="polite"><p class="eyebrow" id="progress-label">MAKING YOUR APP</p><h2 id="progress-title">Preparing your idea</h2><p id="progress-detail"></p><ol id="steps"><li data-step="input">Understand your idea</li><li data-step="build">Build and check the app</li><li data-step="device">Bring it to your device</li></ol><p id="identity" class="identity"></p></section>
+    <p id="error" class="error" role="alert" hidden></p>
+  </main>
+  <footer><span>Small screen. New possibilities.</span><span>Built with <strong>Gemini</strong> + <strong>Gradium</strong></span></footer>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "runtime_version": "0.1.0",
+  "schema_versions": [1],
+  "target": {"width": 320, "height": 480, "orientation": "portrait"},
+  "app_viewport": {"x": 0, "y": 48, "width": 320, "height": 432},
+  "limits": {
+    "max_app_bytes": 65536,
+    "max_json_depth": 12,
+    "max_screens": 6,
+    "max_widgets_per_screen": 8,
+    "max_widgets_total": 32,
+    "max_state_values": 16,
+    "max_actions_per_event": 4,
+    "max_timers": 2,
+    "max_duration_seconds": 3600,
+    "max_id_characters": 48,
+    "max_name_characters": 48,
+    "max_text_characters": 120,
+    "max_text_utf8_bytes": 480,
+    "min_integer": -2147483648,
+    "max_integer": 2147483647,
+    "max_app_version": 2147483647
+  },
+  "supported_text": {"first_codepoint": 32, "last_codepoint": 126, "empty_allowed": false},
+  "palettes": {
+    "dark_green": {"background": "#101820", "foreground": "#FFFFFF", "accent": "#80FF80", "on_accent": "#101820"},
+    "light_blue": {"background": "#FFFFFF", "foreground": "#102030", "accent": "#164EAD", "on_accent": "#FFFFFF"}
+  },
+  "fonts": {"medium": {"max_font_size_px": 16, "max_glyph_width_px": 16, "line_height_px": 24}},
+  "layout": {"padding_px": 16, "gap_px": 8, "control_padding_px": 8, "toggle_indicator_px": 32, "min_control_height_px": 48, "wrapping": "fixed_character_columns", "scrolling": false},
+  "widgets": ["label", "button", "counter", "toggle", "timer"],
+  "actions": ["navigate", "set", "increment", "toggle", "timer_start", "timer_pause", "timer_reset"],
+  "completion_actions": ["navigate", "set", "increment", "toggle"],
+  "clock_unit": "monotonic_integer_milliseconds",
+  "physical_layout_verified": false
+}

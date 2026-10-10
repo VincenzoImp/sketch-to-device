@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "app_id": "focus_timer",
+  "version": 1,
+  "name": "Focus Timer",
+  "target": {
+    "width": 320,
+    "height": 480,
+    "orientation": "portrait"
+  },
+  "theme": {
+    "palette": "light_blue",
+    "font_size": "medium"
+  },
+  "initial_screen": "focus",
+  "state": {
+    "done": false
+  },
+  "screens": [
+    {
+      "id": "focus",
+      "title": "A short pause",
+      "widgets": [
+        {
+          "id": "focus_timer",
+          "type": "timer",
+          "text": "Seconds left",
+          "duration_seconds": 5,
+          "on_complete": [
+            {
+              "type": "set",
+              "state_key": "done",
+              "value": true
+            },
+            {
+              "type": "navigate",
+              "screen_id": "finished"
+            }
+          ]
+        },
+        {
+          "id": "begin",
+          "type": "button",
+          "text": "Start / resume",
+          "on_press": [
+            {
+              "type": "timer_start",
+              "widget_id": "focus_timer"
+            }
+          ]
+        },
+        {
+          "id": "pause",
+          "type": "button",
+          "text": "Pause",
+          "on_press": [
+            {
+              "type": "timer_pause",
+              "widget_id": "focus_timer"
+            }
+          ]
+        },
+        {
+          "id": "reset",
+          "type": "button",
+          "text": "Reset",
+          "on_press": [
+            {
+              "type": "timer_reset",
+              "widget_id": "focus_timer"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "finished",
+      "title": "Pause complete",
+      "widgets": [
+        {
+          "id": "done_toggle",
+          "type": "toggle",
+          "text": "Completed",
+          "state_key": "done"
+        },
+        {
+          "id": "restart",
+          "type": "button",
+          "text": "Try again",
+          "on_press": [
+            {
+              "type": "set",
+              "state_key": "done",
+              "value": false
+            },
+            {
+              "type": "timer_reset",
+              "widget_id": "focus_timer"
+            },
+            {
+              "type": "navigate",
+              "screen_id": "focus"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
