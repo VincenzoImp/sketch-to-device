@@ -22,6 +22,14 @@ typedef struct { uint64_t monotonic_ms; int64_t epoch_ms; pr_wall_source wall_so
 typedef enum { PR_TICK, PR_DOWN, PR_MOVE, PR_UP, PR_CANCEL } pr_event_type;
 typedef struct { uint64_t activation, timestamp_ms; pr_event_type type; int x, y; } pr_event;
 typedef struct pr_runtime pr_runtime;
+/* Untrusted program-authored repair hints. Printable ASCII only; no raw stack
+ * or host path. A zero line/column means unavailable. Never use as authority. */
+typedef struct {
+    const char *phase;
+    char exception_name[49], message[193];
+    unsigned line, column;
+    bool truncated;
+} pr_diagnostic;
 typedef struct {
     unsigned callbacks, frames, stale_events;
     size_t engine_payload, peak_engine_payload, owned_native_bytes;
@@ -34,6 +42,10 @@ typedef struct {
  * create copies assets and evaluates source; source need not outlive the call.
  * Engine interrupts are soft; LVGL native OOM is not contained by this API. */
 pr_runtime *pr_create(const pr_program *, pr_clock, uint32_t seed, const char **error);
+/* Same creation path, with copied diagnostics surviving failed construction. */
+pr_runtime *pr_create_diagnostic(const pr_program *, pr_clock, uint32_t seed,
+                                 const char **error, pr_diagnostic *diagnostic);
+bool pr_get_diagnostic(const pr_runtime *, pr_diagnostic *out);
 /* attach/present/detach require the caller's LVGL/BSP lock. Attach is hidden.
  * Detach deletes objects before backing pixels can be freed by destroy. */
 bool pr_attach(pr_runtime *, lv_obj_t *parent);

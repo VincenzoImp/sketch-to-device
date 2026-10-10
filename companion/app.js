@@ -2,8 +2,13 @@
 const $ = selector => document.querySelector(selector);
 let token = sessionStorage.getItem('workspace-token') || '';
 let attachments = [], recorder = null, recordingTimer = null, captureStream = null, working = false;
+let sessionPoll = false;
+function clearSavedJobs() {
+  ['pending-request', 'last-job', 'active-job'].forEach(key => sessionStorage.removeItem(key));
+}
 const fragment = new URLSearchParams(location.hash.slice(1));
 if (fragment.has('token')) {
+  if (token !== fragment.get('token')) clearSavedJobs();
   token = fragment.get('token');
   sessionStorage.setItem('workspace-token', token);
   history.replaceState(null, '', location.pathname);
@@ -51,19 +56,32 @@ function failureMessage(code, reason) {
   return typeof errors[code] === 'string' ? errors[code] : 'The app could not be completed. Your current app is unchanged. You can try again.';
 }
 async function request(path, options = {}) {
-  const response = await fetch(path, {...options, headers:{Authorization:`Bearer ${token}`, ...(options.headers || {})}});
-  const data = await response.json();
-  if (!response.ok) {
-    const error = new Error(typeof errors[data.error] === 'string' ? errors[data.error] : 'The service could not complete this step. Please try again.');
-    error.status = response.status; throw error;
+  const controller = new AbortController(), requestToken = token;
+  const timer = setTimeout(() => controller.abort(), path === '/api/uploads' ? 120000 : 15000);
+  try {
+    const response = await fetch(path, {...options, signal:controller.signal, headers:{Authorization:`Bearer ${requestToken}`, ...(options.headers || {})}});
+    const data = await response.json();
+    if (requestToken !== token) throw new Error('The workspace changed. Reconnect to your current workspace.');
+    if (!response.ok) {
+      const error = new Error(typeof errors[data.error] === 'string' ? errors[data.error] : 'The service could not complete this step. Please try again.');
+      error.status = response.status; error.code = data.error; throw error;
+    }
+    return data;
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error('The connection stopped responding. Check your connection, then resume your request.');
+    throw error;
+  } finally {
+    clearTimeout(timer);
   }
-  return data;
 }
 async function connect() {
   $('#connect').hidden = Boolean(token); $('#workspace').hidden = !token;
   if (!token) return;
-  try { const data = await request('/api/session'); updateDevice(data.device_online); }
-  catch (error) { $('#connect').hidden = false; $('#workspace').hidden = true; showError(error.message); return; }
+  try { updateSession(await request('/api/session')); }
+  catch (error) {
+    if (error.status === 401) { $('#connect').hidden = false; $('#workspace').hidden = true; }
+    showError(error.message); return;
+  }
   if (sessionStorage.getItem('pending-request') || sessionStorage.getItem('last-job')) await recover();
   else await pollActive();
 }
@@ -71,8 +89,19 @@ function updateDevice(online) {
   $('#device-status').textContent = online ? 'Connected · ready to receive' : 'Paired · waiting for connection';
   $('#device-dot').classList.toggle('online', online);
 }
+function updateSession(data) {
+  $('#connect').hidden = true; $('#workspace').hidden = false;
+  updateDevice(data.device_online);
+  if (data.generation_busy && data.device_online) $('#device-status').textContent = 'Connected · an app is being built';
+  const manifest = data.active_app?.manifest;
+  $('#active-app').hidden = !manifest;
+  $('#active-app').textContent = manifest
+    ? `Last acknowledged app: ${manifest.app_id} · v${manifest.version}` : '';
+}
 $('#connect-form').addEventListener('submit', event => {
-  event.preventDefault(); token = $('#access-token').value.trim(); sessionStorage.setItem('workspace-token', token); $('#error').hidden = true; connect();
+  event.preventDefault(); const nextToken = $('#access-token').value.trim();
+  if (token !== nextToken) clearSavedJobs();
+  token = nextToken; sessionStorage.setItem('workspace-token', token); $('#error').hidden = true; connect();
 });
 function renderFiles() {
   $('#file-list').replaceChildren();
@@ -138,7 +167,7 @@ async function acceptPending() {
   sessionStorage.setItem('last-job', result.job_id); sessionStorage.removeItem('pending-request');
 }
 function reportFailure(error) {
-  if (error.status >= 400 && error.status < 500 && error.status !== 401) {
+  if ([400, 409, 413, 415, 422].includes(error.status)) {
     sessionStorage.removeItem('pending-request');
   }
   showError(error.message);
@@ -177,9 +206,9 @@ async function watch(identifier) {
   const deadline = Date.now() + 15 * 60 * 1000;
   let awaitingDevice = false;
   while (Date.now() < deadline) {
-    const job = await request(`/api/jobs/${encodeURIComponent(identifier)}`);
+    const job = await readJob(identifier, 'last-job');
     awaitingDevice = ['ready','waiting_device'].includes(job.stage);
-    progress(job.stage, job.detail, job.deployment, job.diagnostics); updateDevice(job.device_online);
+    showJob(job);
     if (['active','failed','superseded','recovered'].includes(job.stage)) {
       if (job.stage === 'active') sessionStorage.setItem('active-job', identifier);
       sessionStorage.removeItem('last-job'); return;
@@ -190,16 +219,45 @@ async function watch(identifier) {
     ? 'Your app is waiting for the device. Check its connection, then tap Resume request to see its status.'
     : 'This request is still in progress. Tap Resume request to reconnect to it.');
 }
+async function readJob(identifier, storageKey) {
+  try { return await request(`/api/jobs/${encodeURIComponent(identifier)}`); }
+  catch (error) {
+    if ((error.status === 404 && error.code === 'job_not_found') || (error.status === 400 && error.code === 'invalid_job')) {
+      if (sessionStorage.getItem(storageKey) === identifier) sessionStorage.removeItem(storageKey);
+      error.message = 'This saved request is no longer available. Your installed app is unchanged. You can start a new request.';
+    }
+    throw error;
+  }
+}
+function showJob(job) {
+  progress(job.stage, job.detail, job.deployment, job.diagnostics); updateDevice(job.device_online);
+  if (job.stage === 'active' && !job.device_online) {
+    $('#progress-title').textContent = 'Installation confirmed';
+    $('#progress-label').textContent = 'INSTALLED · DEVICE OFFLINE';
+    $('#progress-detail').textContent = 'The device acknowledged this app earlier. Waiting for its connection to return.';
+  }
+}
 async function pollActive() {
   const identifier = sessionStorage.getItem('active-job');
   if (!identifier || working) return;
   try {
-    const job = await request(`/api/jobs/${encodeURIComponent(identifier)}`);
+    const job = await readJob(identifier, 'active-job');
     // A response for the previous app must not overwrite a newly started job.
     if (working || sessionStorage.getItem('active-job') !== identifier) return;
-    progress(job.stage, job.detail, job.deployment, job.diagnostics); updateDevice(job.device_online);
+    showJob(job);
     if (['recovered','failed','superseded'].includes(job.stage)) sessionStorage.removeItem('active-job');
   } catch (_) { /* Keep the identity and retry after a transient connection loss. */ }
 }
 connect();
-setInterval(async () => { if (token && !working) { try { updateDevice((await request('/api/session')).device_online); await pollActive(); } catch (_) {} } }, 5000);
+setInterval(async () => {
+  if (!token || working || sessionPoll) return;
+  sessionPoll = true;
+  try {
+    const data = await request('/api/session');
+    if (!working) { updateSession(data); await pollActive(); }
+  } catch (_) {
+    if (!working) updateDevice(false);
+    // Keep the last acknowledged identity while the service reconnects.
+  }
+  finally { sessionPoll = false; }
+}, 5000);

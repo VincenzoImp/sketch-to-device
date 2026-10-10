@@ -120,6 +120,50 @@ class BrokerTests(unittest.TestCase):
         args["scenario"]["events"][0] = feedback["example"]
         self.assertFalse(self.call("run_app", args, "fixed-frame").is_error)
 
+    def test_actual_pointer_failure_returns_actionable_native_hint_and_repair_keeps_test(self):
+        source = ("gfx.begin('#000000');gfx.end();\napp.onPointer(()=>{\n"
+                  "gfx.begin('#000000');gfx.line(0,60,320,60,'#ff0000',2);gfx.end();\n});")
+        args = self.run_args(source)
+        args["scenario"]["events"] += [dict(type="pointer", phase="up", x=160, y=216, time_ms=20),
+                                       dict(type="frame", name="after")]
+        failed = self.call("run_app", args, "bad-endpoint")
+        self.assertTrue(failed.is_error)
+        detail = self.details(failed)
+        self.assertEqual(detail["error"], "script_exception")
+        hint = detail["diagnostic"]
+        self.assertEqual(hint["phase"], "pointer")
+        self.assertEqual(hint["exception_name"], "TypeError")
+        self.assertEqual(hint["line"], 3)
+        self.assertIn("gfx.line", hint["message"])
+        self.assertIn("0..319", hint["message"])
+        self.assertNotIn("stack", hint)
+        args["source"] = source.replace(",320,", ",319,")
+        repaired = self.call("run_app", args, "valid-endpoint")
+        self.assertFalse(repaired.is_error)
+        self.assertEqual(self.details(repaired)["steps"], 3)
+        self.assertEqual(len(repaired.content), 3)  # Text plus both real frames.
+        with ProgramStore(self.database) as store:
+            self.assertIsNone(store.desired_for_device("board"))
+
+    def test_real_repeated_failure_stalls_despite_distinct_native_receipts(self):
+        from backend.program_agent import run_program_agent
+        from backend.providers import ProviderError
+        from tests.test_program_agent import Client, call, response
+        args = self.run_args("throw Error('controlled failure');")
+        client = Client([response(calls=[call("one", arguments=args)]),
+                         response(identity="second", calls=[call("two", arguments=args)])])
+        with self.assertRaises(ProviderError) as caught:
+            run_program_agent([{"type": "text", "text": "protocol test"}], job_dir=self.folder / "agent",
+                tool_definitions=tool_definitions(), execute_tool=self.broker, client=client)
+        self.assertEqual(caught.exception.code, "generation_stalled")
+        records = [json.loads((self.folder / ("agent/agent-tool-%04d.json" % i)).read_bytes()) for i in range(2)]
+        details = [json.loads(record["content"][0]["text"]) for record in records]
+        self.assertNotEqual(details[0]["receipt_id"], details[1]["receipt_id"])
+        self.assertEqual(details[0]["package_sha256"], details[1]["package_sha256"])
+        self.assertEqual(len(client.sent), 2)
+        with ProgramStore(self.database) as store:
+            self.assertIsNone(store.desired_for_device("board"))
+
     def test_failed_execution_and_empty_visuals_cannot_select(self):
         for index, source in enumerate(("throw Error('controlled')", "let state=0;")):
             result = self.call("run_app", self.run_args(source), "fail" + str(index))

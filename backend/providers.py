@@ -46,6 +46,8 @@ ERROR_MESSAGES = {
     "tool_protocol": "The model did not complete the required validation tools.",
     "repair_limit": "The generated app failed validation after the repair limit.",
     "generation_stalled": "Generation repeated the same failed app. Your previous app is preserved.",
+    "generation_superseded": "A newer request replaced this generation.",
+    "generation_stopped": "Generation was stopped. Your installed app is preserved.",
     "generation": "The app could not be generated. Try a simpler supported request.",
     "unsupported_request": "This request needs a capability the device does not support yet. Your previous app is preserved.",
     "media_dimensions": "Use a photo with smaller pixel dimensions.",
@@ -140,7 +142,7 @@ def request(provider, key, path, body, content_type, deadline, max_response=5242
     """One allowlisted request; bounded DNS/TLS/headers/body, no retry."""
     identifier = r"[A-Za-z0-9_-]{1,4096}"
     google_route = ((method == "POST" and (path == "/v1beta/interactions" or re.fullmatch(
-        r"/v1beta/interactions/" + identifier + r":cancel", path))) or
+        r"/v1beta/interactions/" + identifier + r"(?::cancel|/cancel)", path))) or
         (method == "GET" and (re.fullmatch(r"/v1beta/interactions/" + identifier, path) or re.fullmatch(
             r"/v1beta/environments/" + identifier + r"/files(?:\?recursive=true|/"
             r"(?:workspace/)?out/app\.json\?alt=media)", path))))
@@ -163,6 +165,10 @@ def request(provider, key, path, body, content_type, deadline, max_response=5242
             headers = {"Content-Type": content_type, "Connection": "close",
                        "Accept": "application/json" if provider == "gemini" else "application/x-ndjson",
                        "x-goog-api-key" if provider == "gemini" else "x-api-key": key}
+            # The dedicated background-execution REST guide specifies this
+            # revision and slash route; the older agent example uses :cancel.
+            if provider == "gemini" and method == "POST" and path.endswith("/cancel"):
+                headers["Api-Revision"] = "2026-05-20"
             connection.request(method, path, body=body if method == "POST" else None, headers=headers)
             response = connection.getresponse()
             size, chunks = 0, []

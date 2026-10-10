@@ -8,12 +8,12 @@ Runtime 0.3.0 is flashed and connected. A reproduced checkpoint-identity race wa
 
 Gemini must author apps from user inputs; no coordinator-written games or hidden templates. The available programmable SDK exposes ordinary JavaScript, canvas, input, time and packaged images. Camera/microphone/speaker APIs are not implemented. Text, image and audio remain valid alone or combined. Preserve legacy schema 1 compatibility and all restore images.
 
-The live service endpoint/identity and hotspot credentials are private. Full filesystem/network access and serial operations are available. Do not repeat obsolete requests for manual Terminal work. The latest verified public checkpoint before the pending firmware publication is `4c3f12e8c273e4fc2cc7f8108f55af861a4ac389` (202 files); [the ledger](12-work-ledger.md) owns later publication evidence and current file ownership.
+The live service endpoint/identity and hotspot credentials are private. Full filesystem/network access and serial operations are available. Do not repeat obsolete requests for manual Terminal work. The first D32 checkpoint is published at `4d11954eea2ced850d6937b5a25b2d9da320a629` (208 reviewed files); [the ledger](12-work-ledger.md) owns later publication evidence and current file ownership.
 
 ## Next actions
 
-1. Complete the reviewed public checkpoint before feature edits, as requested. The private backup is already verified.
-2. Diagnose observed generic runtime-error repair loops, superseded provider work/cancellation, and actual JavaScript replacement/resource behavior. Preserve the active app/service while fixing concrete problems.
+1. The requested backup and initial full checkpoint are complete. Finish final review/publication of the stabilization corrections recorded in the ledger.
+2. Activate the reviewed error-feedback, supersession, browser and service-restart fixes. Verify remaining live JavaScript replacement/resource behavior; provider termination is still unconfirmed. Preserve the active app/service while testing.
 3. Test and independently review coherent fixes, publish checkpoints, and activate them with verified connection and recovery state.
 4. Let the user submit their own fresh prompt/media and verify exact installation plus physical gameplay. Report remaining capability limits honestly; do not present a host simulator or emergency republish as that end-to-end result.
 

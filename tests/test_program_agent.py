@@ -58,7 +58,7 @@ class Client:
         self.cancelled.append((path, self.deadline))
         if isinstance(self.cancellation, Exception):
             raise self.cancellation
-        return self.cancellation or {"id": path.rsplit("/", 1)[-1].removesuffix(":cancel"), "status": "cancelled"}
+        return self.cancellation or {"id": path.removesuffix("/cancel").rsplit("/", 1)[-1], "status": "cancelled"}
 
 
 class ProgramAgentChecks(unittest.TestCase):
@@ -103,7 +103,7 @@ class ProgramAgentChecks(unittest.TestCase):
         self.assertEqual(continuation["input"][1]["result"][1]["type"], "image")
         self.assertEqual(self.journal()["selection"], SELECTION)
         self.assertEqual(self.journal()["result"], "selected")
-        self.assertEqual(client.cancelled, [("/v1beta/interactions/second:cancel", 10)])
+        self.assertEqual(client.cancelled, [("/v1beta/interactions/second/cancel", 10)])
         self.assertEqual(self.journal()["cancellation"], "confirmed")
 
     def test_only_submit_callback_can_select_not_provider_prose(self):
@@ -125,6 +125,102 @@ class ProgramAgentChecks(unittest.TestCase):
         self.assertEqual(self.journal()["cancellation"], "unconfirmed")
         self.assertTrue(self.journal()["remote_job_may_continue"])
         self.assertEqual(len(client.sent), 1)
+
+    def test_stop_before_create_does_not_start_remote_work(self):
+        client = Client([])
+        def stopped():
+            raise p.ProviderError("generation_stopped")
+        self.assert_fails(client, "generation_stopped", check_active=stopped)
+        self.assertEqual(client.sent, [])
+        self.assertEqual(client.cancelled, [])
+        self.assertFalse(self.journal()["remote_job_may_continue"])
+
+    def test_supersession_on_create_retains_handle_and_skips_local_tools(self):
+        client = Client([response(calls=[call()])])
+        def current():
+            if client.sent:
+                raise p.ProviderError("generation_superseded")
+        self.assert_fails(client, "generation_superseded", check_active=current)
+        self.assertEqual(self.dispatched, [])
+        self.assertEqual(client.cancelled, [("/v1beta/interactions/first/cancel", 10)])
+        self.assertEqual(self.journal()["cancellation"], "confirmed")
+
+    def test_supersession_racing_transport_failure_preserves_authoritative_stop(self):
+        replaced = [False]
+        class FailingPoll(Client):
+            def google(self, method, path, payload=None):
+                if method == "GET":
+                    self.gets.append(path)
+                    replaced[0] = True
+                    raise p.ProviderError("provider_transport")
+                return super().google(method, path, payload)
+        client = FailingPoll([response("in_progress")])
+        def current():
+            if replaced[0]:
+                raise p.ProviderError("generation_superseded")
+        self.assert_fails(client, "generation_superseded", check_active=current)
+        self.assertEqual(self.journal()["error_code"], "generation_superseded")
+        self.assertEqual(self.dispatched, [])
+        self.assertEqual(len(client.sent), 1)
+        self.assertEqual(client.gets, ["/v1beta/interactions/first"])
+        self.assertEqual(self.journal()["cancellation"], "confirmed")
+
+    def test_stop_after_broker_result_keeps_receipt_but_never_selects_or_continues(self):
+        stopped = [False]
+        client = Client([response(calls=[call(name="submit_app")])])
+        def current():
+            if stopped[0]:
+                raise p.ProviderError("generation_stopped")
+        def broker(*args):
+            stopped[0] = True
+            return result(selection=SELECTION)
+        self.assert_fails(client, "generation_stopped", broker=broker, check_active=current)
+        self.assertEqual(self.journal()["selection"], SELECTION)
+        self.assertEqual(self.journal()["result"], "failed")
+        self.assertTrue((self.job / "agent-tool-0000.json").exists())
+        self.assertEqual(len(client.sent), 1)
+        self.assertEqual(self.journal()["cancellation"], "confirmed")
+
+    def test_cleanup_records_paused_status_and_fixed_error_without_route_retry(self):
+        error = p.ProviderError("provider_request", {"http_status": 400, "http_category": "request_rejected"})
+        error.diagnostics["private"] = "PRIVATE_PROVIDER_BODY"
+        client = Client([response(calls=[call(name="submit_app")])],
+                        polls=[response()], cancellation=error)
+        self.assertEqual(self.run_agent(client), SELECTION)
+        cleanup = self.journal()["cleanup"]
+        self.assertEqual(cleanup["post"]["diagnostics"],
+                         {"http_status": 400, "http_category": "request_rejected"})
+        self.assertEqual(cleanup["readback"]["status"], "requires_action")
+        self.assertTrue(cleanup["readback"]["identity_matched"])
+        self.assertEqual(cleanup["cancellation"], "unconfirmed")
+        self.assertTrue(self.journal()["remote_job_may_continue"])
+        self.assertEqual(len(client.cancelled), 1)
+        self.assertEqual(client.gets, ["/v1beta/interactions/first"])
+        self.assertNotIn("PRIVATE", json.dumps(cleanup))
+
+    def test_cleanup_matches_readback_and_never_confirms_unknown_continuation(self):
+        for unresolved, expected in ((False, "confirmed"), (True, "unconfirmed")):
+            client = Client([], polls=[response("cancelled")],
+                            cancellation=p.ProviderError("provider_transport"))
+            evidence = p._cleanup(client, "first", 10, unresolved, lambda: 1)
+            self.assertEqual(evidence["cancellation"], expected)
+            self.assertEqual(evidence["observed_terminal"], not unresolved)
+        client = Client([], polls=[response("cancelled", "other")],
+                        cancellation=p.ProviderError("provider_transport"))
+        self.assertEqual(p._cleanup(client, "first", 10, False, lambda: 1)["cancellation"], "unconfirmed")
+
+    def test_cleanup_deadline_stops_after_post_without_unbounded_readback(self):
+        now = [1]
+        class SlowClient(Client):
+            def google(self, method, path, payload=None):
+                self.cancelled.append((path, self.deadline))
+                now[0] = 10
+                raise p.ProviderError("deadline")
+        client = SlowClient([])
+        evidence = p._cleanup(client, "first", 10, False, lambda: now[0])
+        self.assertEqual(len(client.cancelled), 1)
+        self.assertFalse(evidence["readback"]["attempted"])
+        self.assertEqual(evidence["cancellation"], "unconfirmed")
 
     def test_completed_without_selection_and_incomplete_never_succeed(self):
         for state in ("completed", "incomplete", "failed", "cancelled"):
@@ -173,7 +269,7 @@ class ProgramAgentChecks(unittest.TestCase):
             return result()
         client = Client([response(calls=[call()])])
         self.assert_fails(client, "deadline", broker=broker, clock=lambda: now[0])
-        self.assertEqual(client.cancelled, [("/v1beta/interactions/first:cancel", 601)])
+        self.assertEqual(client.cancelled, [("/v1beta/interactions/first/cancel", 601)])
         self.assertEqual(len(client.sent), 1)
 
     def test_late_submission_retains_receipt_but_cannot_return_selection(self):
@@ -198,12 +294,12 @@ class ProgramAgentChecks(unittest.TestCase):
             self.run_agent(client, broker=broker)
         self.assertEqual(self.journal()["result"], "interrupted")
         self.assertEqual(self.journal()["cancellation"], "confirmed")
-        self.assertEqual(client.cancelled, [("/v1beta/interactions/first:cancel", 10)])
+        self.assertEqual(client.cancelled, [("/v1beta/interactions/first/cancel", 10)])
 
     def test_bad_poll_identity_cancels_requested_handle(self):
         client = Client([response("in_progress")], [response(identity="unexpected", calls=[call()])])
         self.assert_fails(client)
-        self.assertEqual(client.cancelled[0], ("/v1beta/interactions/first:cancel", 10))
+        self.assertEqual(client.cancelled[0], ("/v1beta/interactions/first/cancel", 10))
 
     def test_lost_continuation_retains_handle_and_uncertainty(self):
         client = Client([response(calls=[call()]), p.ProviderError("provider_transport")])
@@ -215,7 +311,7 @@ class ProgramAgentChecks(unittest.TestCase):
     def test_malformed_new_status_cancels_new_known_id(self):
         client = Client([response(calls=[call()]), response("invalid", "new")])
         self.assert_fails(client)
-        self.assertEqual(client.cancelled[0][0], "/v1beta/interactions/new:cancel")
+        self.assertEqual(client.cancelled[0][0], "/v1beta/interactions/new/cancel")
 
     def test_changed_environment_fails_before_next_tool(self):
         client = Client([response(calls=[call()]),

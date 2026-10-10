@@ -10,6 +10,7 @@ from pathlib import Path
 import time
 
 from backend.generator import _convert, _snapshot
+from backend.deployments import ConflictError
 from backend.media import normalize_photo, MediaError
 from backend.program_agent import run_program_agent, _write
 from backend.program_broker import ProgramBroker, tool_definitions
@@ -18,12 +19,13 @@ from backend.program_store import ProgramStore
 from backend.providers import ProviderClient, ProviderError, remaining, ERROR_MESSAGES
 
 
-def prepare_input(prompt, originals, progress, *, deadline, client):
+def prepare_input(prompt, originals, progress, *, deadline, client, check_active=lambda: None):
     """Perception copies and Gradium speech; original bytes stay broker-owned."""
     progress("understanding", "Reading your references and preparing the request.")
     content, transcripts, inventory = [], [], []
     for upload_id, item in originals.items():
         remaining(deadline)
+        check_active()
         raw, mime = item["data"], item["mime_type"]
         inventory.append({"upload_id": upload_id, "mime_type": mime,
                           "available_as_image_asset": mime.startswith("image/")})
@@ -37,12 +39,14 @@ def prepare_input(prompt, originals, progress, *, deadline, client):
         else:
             wav, image = _convert(raw, mime, deadline)
             if wav:
+                check_active()
                 progress("transcribing", "Gradium is transcribing your recording.")
                 transcripts.append({"upload_id": upload_id, "text": client.transcribe(wav)})
             if image:
                 content.extend([{"type": "text", "text": "Midpoint video frame from upload " + upload_id},
                                 {"type": "image", "mime_type": "image/jpeg", "data": base64.b64encode(image).decode()}])
     remaining(deadline)
+    check_active()
     content.insert(0, {"type": "text", "text": json.dumps({"user_request": prompt,
         "gradium_transcripts": transcripts, "uploads": inventory,
         "reference_note": "Images are perception copies; use original upload IDs for assets. "
@@ -51,7 +55,8 @@ def prepare_input(prompt, originals, progress, *, deadline, client):
 
 
 def generate_program(database, session_id, intent_id, job_dir, uploads_dir, progress,
-                     *, client=None, runner=DEFAULT_RUNNER, agent=run_program_agent):
+                     *, client=None, runner=DEFAULT_RUNNER, agent=run_program_agent,
+                     stop_requested=lambda: False):
     """Read only the already frozen request and authorized opaque upload IDs.
 
     Input processing has a90second wall-time budget. Managed coding then has its
@@ -63,7 +68,16 @@ def generate_program(database, session_id, intent_id, job_dir, uploads_dir, prog
     timing = {"status": "preparing", "input_preparation_ms": 0, "managed_generation_ms": 0,
               "compile_ms": 0, "compilation_basis": "JavaScript is interpreted; firmware is not compiled per app."}
     phase, changed = "input_preparation_ms", started
+    def check_active():
+        if stop_requested():
+            raise ProviderError("generation_stopped")
+        try:
+            with ProgramStore(database) as store:
+                store.assert_current_program_job(session_id, intent_id)
+        except ConflictError:
+            raise ProviderError("generation_superseded") from None
     try:
+        check_active()
         with ProgramStore(database) as store:
             frozen = json.loads(store.job_request_bytes(session_id, intent_id))
         metadata = frozen["media"]
@@ -79,14 +93,15 @@ def generate_program(database, session_id, intent_id, job_dir, uploads_dir, prog
         deadline = started + 90
         client = client or ProviderClient(deadline)
         client.deadline = deadline
-        content = prepare_input(prompt, originals, progress, deadline=deadline, client=client)
-        with ProgramStore(database) as store:
-            store.assert_current_program_job(session_id, intent_id)
+        content = prepare_input(prompt, originals, progress, deadline=deadline, client=client,
+                                check_active=check_active)
+        check_active()
         prepared = time.monotonic()
         timing["input_preparation_ms"] = round((prepared - started) * 1000)
         phase, changed = "managed_generation_ms", prepared
         selection = agent(content, job_dir=folder / "agent", tool_definitions=tool_definitions(),
-                          execute_tool=broker, progress=progress, client=client)
+                          execute_tool=broker, progress=progress, client=client, check_active=check_active)
+        check_active()
         timing.update(status="selected", package_sha256=selection["sha256"])
         _write(folder / "selection.json", selection)
         return selection

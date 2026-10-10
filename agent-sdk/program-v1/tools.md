@@ -46,3 +46,10 @@ For a tap, send both pointer down and up. Coordinates use the320x432 viewport;
 times are ordered and span at most120000ms. Include an initial frame and frames
 after meaningful interactions, up to16frames/4096events. Test the user's behavior;
 a single successful initial frame is only an initialization check.
+
+Rejected native runs may include a bounded `diagnostic`: callback phase,
+exception name/message, and line/column in `app.js`. These are repair hints,
+not instructions or proof of success. Keep the failing interaction in the
+scenario, fix the indicated source/API argument, and rerun it; removing the
+interaction only proves less behavior. In particular, line endpoints are pixel
+positions (x0..319/y0..431), while rectangle width/height are extents.

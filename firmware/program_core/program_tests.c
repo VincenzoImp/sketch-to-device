@@ -22,6 +22,36 @@ int main(void){
     assert(pr_dispatch(r,(pr_event){999,4,PR_DOWN,4,5},clock_at(4)));assert(pr_get_metrics(r).stale_events==1);drop(r);
     const char *bad[]={"throw Error('init')","while(true){}","Promise.reject(Error('init'))","Promise.resolve().then(()=>{throw Error('async')})","function spin(){Promise.resolve().then(spin)}spin()","const a=[];while(true)a.push('x'.repeat(1000))","function f(){f()}f()","gfx.begin('#000000');gfx.begin('#ffffff')","gfx.begin('#000000');try{for(let i=0;i<1000;i++)gfx.rect(0,0,1,1,'#ffffff')}catch(e){}gfx.end()","gfx.begin('#000000');gfx.rect({valueOf(){while(true){}}},0,1,1,'#ffffff')"};
     for(size_t i=0;i<sizeof(bad)/sizeof(*bad);i++){pr_program p={bad[i],strlen(bad[i]),NULL,0};const char *e=NULL;assert(!pr_create(&p,clock_at(0),1,&e));assert(e);}
+    /* Exception hints never invoke accessors, proxy traps or coercion. */
+    const char *diagnostic_cases[]={
+        "\n\nthrow new TypeError('expected failure');",
+        "throw 'primitive \x01 detail';",
+        "const e=Error('hidden');Object.defineProperty(e,'message',{get(){while(true){}}});Object.defineProperty(e,'stack',{get(){while(true){}}});Object.setPrototypeOf(e,new Proxy({},{getOwnPropertyDescriptor(){while(true){}},getPrototypeOf(){while(true){}}}));throw e;",
+        "throw new Proxy(Error('hidden'),{get(){while(true){}},getOwnPropertyDescriptor(){while(true){}},getPrototypeOf(){while(true){}}});",
+        "throw {toString(){while(true){}},get message(){while(true){}}};",
+        "throw Error('x'.repeat(1000));",
+        "Promise.reject(new RangeError('async detail'));"
+    };
+    for(size_t i=0;i<sizeof(diagnostic_cases)/sizeof(*diagnostic_cases);i++) {
+        pr_program sample={diagnostic_cases[i],strlen(diagnostic_cases[i]),NULL,0};pr_diagnostic detail;const char *e=NULL;
+        assert(!pr_create_diagnostic(&sample,clock_at(0),1,&e,&detail));assert(e);
+        assert(!strcmp(detail.phase,"initialization")&&detail.exception_name[0]);
+        assert(strlen(detail.message)<=192&&strlen(detail.exception_name)<=48);
+        for(const char *p=detail.message;*p;p++)assert(*p>=' '&&*p<='~');
+        if(i==0)assert(!strcmp(detail.exception_name,"TypeError")&&!strcmp(detail.message,"expected failure")&&detail.line==3);
+        if(i==2)assert(!strcmp(e,"script_exception")&&!strcmp(detail.exception_name,"Error")&&!strcmp(detail.message,"Exception details unavailable")&&!detail.line);
+        if(i==3||i==4)assert(!strcmp(e,"script_exception")&&!strcmp(detail.exception_name,"ThrownValue"));
+        if(i==5)assert(detail.truncated&&strlen(detail.message)==192);
+        if(i==6)assert(!strcmp(e,"unhandled_rejection")&&!strcmp(detail.exception_name,"RangeError")&&!strcmp(detail.message,"async detail"));
+    }
+    r=make("app.onTick(()=>{const x={};x.missingMethod()});");assert(r);show(r);assert(!tick(r,1));
+    pr_diagnostic detail;assert(pr_get_diagnostic(r,&detail));assert(!strcmp(detail.phase,"tick")&&!strcmp(detail.exception_name,"TypeError")&&detail.message[0]&&detail.line==1);
+    pr_diagnostic saved=detail;assert(!tick(r,2));assert(pr_get_diagnostic(r,&detail)&&!memcmp(&saved,&detail,sizeof(detail)));drop(r);
+    r=make("app.onTick(()=>{gfx.begin('#000000');gfx.line(0,60,320,60,'#ffffff',2);gfx.end()});");assert(r);show(r);assert(!tick(r,1));
+    assert(pr_get_diagnostic(r,&detail)&&strstr(detail.message,"gfx.line")&&strstr(detail.message,"x=0..319"));drop(r);
+    r=make("app.onPointer(async()=>{throw new Error('pointer detail')});");assert(r);show(r);
+    assert(!pr_dispatch(r,(pr_event){1,1,PR_DOWN,1,1},clock_at(1)));assert(pr_get_diagnostic(r,&detail));
+    assert(!strcmp(detail.phase,"pointer")&&!strcmp(detail.message,"pointer detail"));drop(r);
     r=make("const p=Promise.reject(1);Promise.resolve().then(()=>p.catch(()=>{}));gfx.begin('#123456');gfx.end();");assert(r);show(r);assert(pixel(r,0,0)==rgb(0x123456));drop(r);
     const char *end_failures[]={"throw Error('sync')","return Promise.reject(Error('async'))","return Promise.resolve().then(()=>{throw Error('job')})","while(true){}"};
     for(size_t i=0;i<sizeof(end_failures)/sizeof(*end_failures);i++){char s[512];snprintf(s,sizeof(s),"gfx.begin('#123456');gfx.end();app.onTick(()=>{gfx.begin('#ffffff');gfx.end();%s});",end_failures[i]);r=make(s);assert(r);show(r);assert(!tick(r,1));assert(!pr_present(r));assert(pixel(r,0,0)==rgb(0x123456));drop(r);}

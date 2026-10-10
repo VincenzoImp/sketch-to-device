@@ -107,6 +107,31 @@ satisfied. Failed execution exits1; invalid command shape exits2. The backend
 still enforces process deadlines, restricted environment/output and independent
 expected outcomes. Source/scenario errors cannot select arbitrary output paths.
 
+## Bounded exception diagnostics
+
+JavaScript rejections can add a `diagnostic` object to the native result. It has
+exactly `phase` (`initialization`, `tick`, or `pointer`), `exception_name`
+(printable ASCII, at most48bytes), `message` (printable ASCII, at most192bytes),
+`line` and `column` (null or integers1..65536), and boolean `truncated`.
+Locations come only from an `app.js` entry within the first1,024bytes of an
+own-data stack string. Raw stacks and process stderr are not returned.
+The existing fixed `error` remains authoritative; diagnostic text is untrusted
+program-authored repair guidance and must never authorize tool operations.
+
+The shared C API offers `pr_create_diagnostic` for failed initialization and
+`pr_get_diagnostic` for later callbacks. The existing `pr_create` remains
+compatible. Diagnostics latch with the first fault, preserve the prior complete
+frame, and do not raise engine/drawing budgets. Native graphics argument errors
+name the operation and its actual accepted bounds.
+
+Extraction inspects data descriptors on genuine Error objects, primitive string
+throws, and a maximum six non-Proxy ordinary/Error prototype objects for the
+name. It does not call getters, `toString`, Proxy traps or custom stack formatters.
+Other thrown objects receive a fixed generic hint. Same-turn handled Promise
+rejections remain valid; still-unhandled reasons use the same extraction path.
+Tests exercise malicious accessors/proxies/coercion, failed callbacks, missing
+methods, async rejection, ASCII scrubbing, long strings and source locations.
+
 ## Remaining boundaries
 
 Engine limits are256KiB heap,512KiB tracked allocation payload,32KiB JS stack,

@@ -32,6 +32,7 @@ struct pr_runtime {
     size_t payload, peak, native_bytes;
     unsigned interrupt_calls, command_work, text_work, pixel_work;
     int64_t deadline; const char *fault;
+    pr_diagnostic diagnostic;
     pr_clock clock; uint64_t activation, last_tick; uint32_t random;
     bool paused, drawing, staged, pending;
     batch build, candidate, ready;
@@ -83,6 +84,66 @@ static int interrupt(JSRuntime *engine, void *o) {
     if (++r->interrupt_calls>1000 || real_us()>=r->deadline) { r->fault="execution_budget"; return 1; }
     return 0;
 }
+/* Inspect only primitive strings and data descriptors on genuine Errors.
+ * JS_GetProperty/ToString would invoke app getters, proxies or coercion here. */
+static bool diagnostic_string(JSContext *c,JSValueConst value,char *out,size_t cap,bool *truncated) {
+    if(!JS_IsString(value))return false;
+    size_t size=0;const char *text=JS_ToCStringLen(c,&size,value);
+    if(!text){JS_FreeValue(c,JS_GetException(c));return false;}
+    size_t copied=size<cap-1?size:cap-1;
+    for(size_t i=0;i<copied;i++)out[i]=(text[i]>=' '&&text[i]<='~')?text[i]:' ';
+    out[copied]=0;*truncated|=size>copied;JS_FreeCString(c,text);return true;
+}
+static JSValue diagnostic_data(JSContext *c,JSValueConst object,const char *key) {
+    JSAtom atom=JS_NewAtom(c,key);if(atom==JS_ATOM_NULL){JS_FreeValue(c,JS_GetException(c));return JS_UNDEFINED;}
+    JSPropertyDescriptor desc={0};int found=JS_GetOwnProperty(c,&desc,object,atom);JS_FreeAtom(c,atom);
+    if(found<0){JS_FreeValue(c,JS_GetException(c));return JS_UNDEFINED;}
+    if(!found)return JS_UNDEFINED;
+    JSValue value=!(desc.flags&JS_PROP_GETSET)&&JS_IsString(desc.value)?JS_DupValue(c,desc.value):JS_UNDEFINED;
+    JS_FreeValue(c,desc.value);JS_FreeValue(c,desc.getter);JS_FreeValue(c,desc.setter);return value;
+}
+static unsigned diagnostic_number(const char *text,size_t limit,size_t *offset) {
+    unsigned n=0;size_t start=*offset;
+    while(*offset<limit && text[*offset]>='0' && text[*offset]<='9') {
+        unsigned digit=(unsigned)(text[(*offset)++]-'0');if(n>6553||(n==6553&&digit>6))return 0;n=n*10+digit;
+    }
+    return *offset>start?n:0;
+}
+static void diagnostic_location(JSContext *c,JSValueConst stack,pr_diagnostic *d) {
+    if(!JS_IsString(stack))return;
+    size_t size=0;const char *text=JS_ToCStringLen(c,&size,stack);
+    if(!text){JS_FreeValue(c,JS_GetException(c));return;}
+    size_t limit=size<1024?size:1024;d->truncated|=size>limit;
+    for(size_t i=0;i+7<=limit;i++)if(!memcmp(text+i,"app.js:",7)) {
+        size_t at=i+7;unsigned line=diagnostic_number(text,limit,&at);
+        if(line){d->line=line;if(at<limit&&text[at]==':'){at++;d->column=diagnostic_number(text,limit,&at);}break;}
+    }
+    JS_FreeCString(c,text);
+}
+static void diagnostic_exception(pr_runtime *r,JSContext *c,JSValueConst exception) {
+    pr_diagnostic *d=&r->diagnostic;if(d->exception_name[0])return;
+    strcpy(d->exception_name,"ThrownValue");strcpy(d->message,"Non-Error exception; no object properties were evaluated");
+    if(JS_IsString(exception)){strcpy(d->exception_name,"String");diagnostic_string(c,exception,d->message,sizeof(d->message),&d->truncated);return;}
+    if(!JS_IsError(exception)||JS_IsProxy(exception))return;
+    strcpy(d->exception_name,"Error");strcpy(d->message,"Exception details unavailable");
+    JSValue message=diagnostic_data(c,exception,"message");
+    diagnostic_string(c,message,d->message,sizeof(d->message),&d->truncated);JS_FreeValue(c,message);
+    JSValue stack=diagnostic_data(c,exception,"stack");diagnostic_location(c,stack,d);JS_FreeValue(c,stack);
+    JSValue global=JS_GetGlobalObject(c);JSClassID ordinary=JS_GetClassID(global);JS_FreeValue(c,global);
+    JSValue object=JS_DupValue(c,exception);
+    for(unsigned i=0;i<6 && JS_IsObject(object) && !JS_IsProxy(object) &&
+        (JS_IsError(object)||JS_GetClassID(object)==ordinary);i++) {
+        JSValue name=diagnostic_data(c,object,"name");
+        bool copied=diagnostic_string(c,name,d->exception_name,sizeof(d->exception_name),&d->truncated);JS_FreeValue(c,name);
+        if(copied)break;
+        JSValue next=JS_GetPrototype(c,object);JS_FreeValue(c,object);object=next;
+        if(JS_IsException(object)){JS_FreeValue(c,JS_GetException(c));break;}
+    }
+    JS_FreeValue(c,object);
+}
+static void diagnostic_pending(pr_runtime *r,JSContext *c) {
+    JSValue exception=JS_GetException(c);diagnostic_exception(r,c,exception);JS_FreeValue(c,exception);
+}
 static void rejection(JSContext *c, JSValueConst promise, JSValueConst reason, bool handled, void *o) {
     (void)reason; pr_runtime *r=o;
     for(unsigned i=0;i<r->rejected_count;i++) if(JS_IsSameValue(c,r->rejected[i],promise)) {
@@ -100,14 +161,17 @@ static void checkpoint_begin(pr_runtime *r) {
 }
 static bool checkpoint_end(pr_runtime *r, JSValue value) {
     bool ok=!JS_IsException(value); JS_FreeValue(r->context,value);
-    if(!ok) JS_FreeValue(r->context,JS_GetException(r->context));
+    if(!ok)diagnostic_pending(r,r->context);
     unsigned jobs=0;
     while(ok && JS_IsJobPending(r->engine)) {
         if(jobs++>=JOB_LIMIT || real_us()>=r->deadline) { r->fault="microtask_budget"; ok=false; break; }
         JSContext *c=NULL;
-        if(JS_ExecutePendingJob(r->engine,&c)<0) { if(c)JS_FreeValue(c,JS_GetException(c)); ok=false; }
+        if(JS_ExecutePendingJob(r->engine,&c)<0) { if(c)diagnostic_pending(r,c); ok=false; }
     }
-    if(r->rejected_count || r->rejection_overflow) { r->fault="unhandled_rejection"; ok=false; }
+    if(r->rejected_count || r->rejection_overflow) {
+        if(r->rejected_count){JSValue reason=JS_PromiseResult(r->context,r->rejected[0]);diagnostic_exception(r,r->context,reason);JS_FreeValue(r->context,reason);}
+        if(!r->fault)r->fault="unhandled_rejection";ok=false;
+    }
     if(r->fault)ok=false;
     if(!ok) { if(!r->fault)r->fault="script_exception"; r->pending=false; return false; }
     if(r->staged) { r->ready=r->candidate; r->pending=true; }
@@ -138,43 +202,54 @@ static bool append(pr_runtime *r,command q,unsigned pixels) {
     r->command_work++;r->pixel_work+=pixels;r->text_work+=(unsigned)text;r->build.items[r->build.count++]=q;return true;
 }
 enum { G_BEGIN,G_RECT,G_LINE,G_TEXT,G_IMAGE,G_END };
+static JSValue bad_graphics(JSContext *c,int operation) {
+    static const char *const messages[]={
+        "gfx.begin requires one #RRGGBB string and no already-open frame",
+        "gfx.rect requires an open frame, integer x/y in -32768..32767, integer width/height in 0..32767, and #RRGGBB color",
+        "gfx.line requires an open frame, integer endpoints x=0..319/y=0..431, #RRGGBB color, and integer thickness=1..32",
+        "gfx.text requires an open frame, integer x/y in -32768..32767, text<=256 UTF-8 bytes without NUL, and #RRGGBB color",
+        "gfx.image requires an open frame, a registered asset ID, and integer x/y in -32768..32767",
+        "gfx.end requires an open frame and no arguments"
+    };
+    return JS_ThrowTypeError(c,"%s",messages[operation]);
+}
 static JSValue graphics(JSContext *c,JSValueConst self,int argc,JSValueConst *argv,int op) {
     (void)self;pr_runtime *r=JS_GetContextOpaque(c);command q={0};
     if(op==G_BEGIN) {
-        if(argc!=1||r->drawing||!color(c,argv[0],&q.color))return bad(c);
+        if(argc!=1||r->drawing||!color(c,argv[0],&q.color))return bad_graphics(c,op);
         r->build.count=0;q.type=CMD_CLEAR;
-        if(!append(r,q,PR_WIDTH*PR_HEIGHT))return bad(c);r->drawing=true;return JS_UNDEFINED;
+        if(!append(r,q,PR_WIDTH*PR_HEIGHT))return bad_graphics(c,op);r->drawing=true;return JS_UNDEFINED;
     }
-    if(!r->drawing)return bad(c);
+    if(!r->drawing)return bad_graphics(c,op);
     if(op==G_END) {
-        if(argc)return bad(c);r->candidate=r->build;r->staged=true;r->drawing=false;return JS_UNDEFINED;
+        if(argc)return bad_graphics(c,op);r->candidate=r->build;r->staged=true;r->drawing=false;return JS_UNDEFINED;
     }
     int args=op==G_RECT?5:op==G_LINE?6:op==G_TEXT?4:3;
-    if(argc!=args)return bad(c);
+    if(argc!=args)return bad_graphics(c,op);
     unsigned pixels=0;
     if(op==G_IMAGE) {
-        char id[49];if(!string(c,argv[0],id,48)||!number(c,argv[1],-32768,32767,&q.x)||!number(c,argv[2],-32768,32767,&q.y))return bad(c);
-        size_t i;for(i=0;i<r->asset_count;i++)if(!strcmp(id,r->assets[i].id))break;if(i==r->asset_count)return bad(c);
+        char id[49];if(!string(c,argv[0],id,48)||!number(c,argv[1],-32768,32767,&q.x)||!number(c,argv[2],-32768,32767,&q.y))return bad_graphics(c,op);
+        size_t i;for(i=0;i<r->asset_count;i++)if(!strcmp(id,r->assets[i].id))break;if(i==r->asset_count)return bad_graphics(c,op);
         q.type=CMD_IMAGE;q.asset=(int)i;q.w=r->assets[i].image.header.w;q.h=r->assets[i].image.header.h;
     } else {
-        if(!number(c,argv[0],-32768,32767,&q.x)||!number(c,argv[1],-32768,32767,&q.y))return bad(c);
+        if(!number(c,argv[0],-32768,32767,&q.x)||!number(c,argv[1],-32768,32767,&q.y))return bad_graphics(c,op);
         if(op==G_TEXT) {
-            q.type=CMD_TEXT;if(!string(c,argv[2],q.text,PR_TEXT_BYTES)||!color(c,argv[3],&q.color))return bad(c);
+            q.type=CMD_TEXT;if(!string(c,argv[2],q.text,PR_TEXT_BYTES)||!color(c,argv[3],&q.color))return bad_graphics(c,op);
             /* The fixed Montserrat16 font, including replacement glyphs, is used on both targets. */
             q.w=PR_WIDTH;q.h=PR_HEIGHT;
         } else if(op==G_RECT) {
-            q.type=CMD_RECT;if(!number(c,argv[2],0,32767,&q.w)||!number(c,argv[3],0,32767,&q.h)||!color(c,argv[4],&q.color))return bad(c);
+            q.type=CMD_RECT;if(!number(c,argv[2],0,32767,&q.w)||!number(c,argv[3],0,32767,&q.h)||!color(c,argv[4],&q.color))return bad_graphics(c,op);
         } else {
             q.type=CMD_LINE;
             /* Endpoint coordinates stay inside the viewport: bounds cover native line work. */
-            if(q.x<0||q.x>=PR_WIDTH||q.y<0||q.y>=PR_HEIGHT||!number(c,argv[2],0,PR_WIDTH-1,&q.w)||!number(c,argv[3],0,PR_HEIGHT-1,&q.h)||!color(c,argv[4],&q.color)||!number(c,argv[5],1,32,&q.thickness))return bad(c);
+            if(q.x<0||q.x>=PR_WIDTH||q.y<0||q.y>=PR_HEIGHT||!number(c,argv[2],0,PR_WIDTH-1,&q.w)||!number(c,argv[3],0,PR_HEIGHT-1,&q.h)||!color(c,argv[4],&q.color)||!number(c,argv[5],1,32,&q.thickness))return bad_graphics(c,op);
             int x=q.x<q.w?q.x:q.w,y=q.y<q.h?q.y:q.h;
             pixels=clipped_area(x-q.thickness,y-q.thickness,abs(q.w-q.x)+2*q.thickness+1,abs(q.h-q.y)+2*q.thickness+1);
         }
     }
     if(op==G_TEXT)pixels=(unsigned)strlen(q.text)*16u*20u;
     else if(op!=G_LINE)pixels=clipped_area(q.x,q.y,q.w,q.h);
-    if(!append(r,q,pixels))return bad(c);return JS_UNDEFINED;
+    if(!append(r,q,pixels))return bad_graphics(c,op);return JS_UNDEFINED;
 }
 enum { A_TICK,A_POINTER,A_NOW,A_WALL,A_RANDOM };
 static JSValue application(JSContext *c,JSValueConst self,int argc,JSValueConst *argv,int op) {
@@ -208,11 +283,12 @@ static bool setup(pr_runtime *r) {
     JS_FreeValue(c,math);JS_FreeValue(c,global);JS_FreeValue(c,gfx);JS_FreeValue(c,app);return ok;
 }
 static bool valid_clock(pr_clock c) { return c.monotonic_ms<=9007199254740991ULL&&c.epoch_ms>=0&&c.epoch_ms<=9007199254740991LL&&c.wall_source>=PR_WALL_UNAVAILABLE&&c.wall_source<=PR_WALL_SYNCHRONIZED; }
-pr_runtime *pr_create(const pr_program *p,pr_clock clock,uint32_t seed,const char **error) {
+pr_runtime *pr_create_diagnostic(const pr_program *p,pr_clock clock,uint32_t seed,const char **error,pr_diagnostic *diagnostic) {
+    if(diagnostic)*diagnostic=(pr_diagnostic){.phase="initialization"};
     if(error)*error="invalid_program";
     if(!p||!p->source||!p->source_size||p->source_size>PR_PACKAGE_BYTES||memchr(p->source,0,p->source_size)||p->asset_count>PR_ASSETS||(p->asset_count&&!p->assets)||!valid_clock(clock))return NULL;
     pr_runtime *r=calloc(1,sizeof(*r));if(!r){if(error)*error="allocation_failed";return NULL;}
-    r->clock=clock;r->last_tick=clock.monotonic_ms;r->random=seed?seed:1;r->native_bytes=sizeof(*r);
+    r->clock=clock;r->last_tick=clock.monotonic_ms;r->random=seed?seed:1;r->native_bytes=sizeof(*r);r->diagnostic.phase="initialization";
     r->tick=r->pointer=JS_UNDEFINED;size_t total=0;
     for(size_t i=0;i<p->asset_count;i++) {
         const pr_asset *a=&p->assets[i];
@@ -237,7 +313,14 @@ pr_runtime *pr_create(const pr_program *p,pr_clock clock,uint32_t seed,const cha
     if(!checkpoint_end(r,result))goto fail;
     if(error)*error=NULL;return r;
 fail:
-    if(error)*error=r->fault?r->fault:"allocation_or_program_error";pr_destroy(r);return NULL;
+    if(error)*error=r->fault?r->fault:"allocation_or_program_error";
+    if(diagnostic)*diagnostic=r->diagnostic;pr_destroy(r);return NULL;
+}
+pr_runtime *pr_create(const pr_program *p,pr_clock clock,uint32_t seed,const char **error) {
+    return pr_create_diagnostic(p,clock,seed,error,NULL);
+}
+bool pr_get_diagnostic(const pr_runtime *r,pr_diagnostic *out) {
+    if(!r||!out)return false;*out=r->diagnostic;return out->exception_name[0]!=0;
 }
 static void plain(lv_obj_t *o) { lv_obj_remove_style_all(o);lv_obj_set_pos(o,0,0);lv_obj_set_size(o,PR_WIDTH,PR_HEIGHT);lv_obj_remove_flag(o,LV_OBJ_FLAG_SCROLLABLE); }
 bool pr_attach(pr_runtime *r,lv_obj_t *parent) {
@@ -283,6 +366,7 @@ bool pr_dispatch(pr_runtime *r,pr_event event,pr_clock clock) {
     JSValue callback=JS_DupValue(r->context,event.type==PR_TICK?r->tick:r->pointer);
     uint64_t delta=clock.monotonic_ms-r->last_tick;if(event.type==PR_TICK)r->last_tick=clock.monotonic_ms;
     if(!JS_IsFunction(r->context,callback)){JS_FreeValue(r->context,callback);return true;}
+    r->diagnostic.phase=event.type==PR_TICK?"tick":"pointer";
     checkpoint_begin(r);JSContext *c=r->context;JSValue arg=JS_NewObject(c);
     bool allocated=!JS_IsException(arg);
     if(allocated&&event.type==PR_TICK){allocated=JS_SetPropertyStr(c,arg,"now",JS_NewFloat64(c,(double)clock.monotonic_ms))>=0&&JS_SetPropertyStr(c,arg,"delta",JS_NewFloat64(c,(double)delta))>=0;}

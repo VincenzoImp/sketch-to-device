@@ -72,7 +72,9 @@ Have Apple command-line tools, Git, cloudflared, and FFmpeg/FFprobe installed fi
 
 4. Open the private QR on Android, provide an English concept or recording, and tap **Generate and install** once. Confirm the exact installation state and test the physical app. Keep the Mac service/tunnel and hotspot running.
 
-For later firmware/configuration updates, use `--flash-runtime` without the initialization flag. A launcher restart can change the public endpoint: provision against the new running service while preserving network/device identity, then rebuild/flash before expecting delivery. Ordinary app generation installs an app package without flashing firmware. See [readiness](docs/11-readiness.md) before repeating setup in an existing workspace.
+For later firmware/configuration updates, use `--flash-runtime` without the initialization flag. A full launcher restart can change the public endpoint: provision against the new running service while preserving network/device identity, then rebuild/flash before expecting delivery. Ordinary app generation installs an app package without flashing firmware.
+
+For backend source updates while the new launcher is running, use `python3 -B scripts/run_demo.py --restart-backend` in another terminal. This preserves the HTTPS tunnel, phone link and device endpoint; it refuses to interrupt an active generation. If the supervised backend exits, the tunnel remains running so a corrected backend can be restarted through the same command. An older already-running launcher must first be upgraded through one full restart. See [readiness](docs/11-readiness.md) before repeating setup in an existing workspace.
 
 ## Current executable foundation
 

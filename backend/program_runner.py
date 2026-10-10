@@ -32,6 +32,23 @@ class RunnerError(ValueError):
     """Fixed diagnostic, safe to return without paths or process output."""
 
 
+def _diagnostic(value):
+    """Validate bounded app-origin repair hints; they never establish success."""
+    if (type(value) is not dict or set(value) != {
+            "phase", "exception_name", "message", "line", "column", "truncated"}
+            or type(value["phase"]) is not str or value["phase"] not in {"initialization", "tick", "pointer"}
+            or type(value["truncated"]) is not bool):
+        raise RunnerError("runner_output_invalid")
+    for name, maximum in (("exception_name", 48), ("message", 192)):
+        text = value[name]
+        if type(text) is not str or len(text) > maximum or any(not 32 <= ord(c) <= 126 for c in text):
+            raise RunnerError("runner_output_invalid")
+    for name in ("line", "column"):
+        if value[name] is not None and (type(value[name]) is not int or not 1 <= value[name] <= 65536):
+            raise RunnerError("runner_output_invalid")
+    return dict(value)
+
+
 def scenario_bytes(value):
     """Strict independent validation before starting an executable."""
     _object(value, {"version", "seed", "initial_time_ms", "wall_time", "events"}, "$.scenario")
@@ -175,6 +192,10 @@ def execute_program(package, scenario, *, deadline, runner=DEFAULT_RUNNER):
         if process.returncode == 1 and (type(report.get("error")) is not str
                                        or not IDENTIFIER.fullmatch(report["error"])):
             raise RunnerError("runner_output_invalid")
+        if "diagnostic" in report:
+            if process.returncode != 1:
+                raise RunnerError("runner_output_invalid")
+            report["diagnostic"] = _diagnostic(report["diagnostic"])
         expected_names = [e["name"] for e in scenario["events"][:steps] if e["type"] == "frame"]
         frames = report.get("frames")
         if type(frames) is not list or len(frames) > len(expected_names):

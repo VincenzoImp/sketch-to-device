@@ -974,7 +974,7 @@ class ProviderTests(unittest.TestCase):
                 providers.request("gemini", "PRIVATE", path, b"", "application/json", time.monotonic() + 1, method="GET")
             preflight.assert_not_called()
 
-    def test_cancel_route_accepts_only_post_colon_action_with_valid_id(self):
+    def test_cancel_routes_accept_only_documented_post_actions_with_valid_id(self):
         path = "/v1beta/interactions/test_Interaction-123:cancel"
         connection, response = Mock(), Mock()
         expected = b'{"id":"test_Interaction-123","status":"cancelled"}'
@@ -987,8 +987,15 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(actual, expected)
         self.assertEqual(connection.request.call_args.args, ("POST", path))
         self.assertEqual(connection.request.call_count, 1)
+        slash = "/v1beta/interactions/test_Interaction-123/cancel"
+        response.read1.side_effect = [expected, b""]
+        with patch.object(providers, "network_preflight", return_value=(connection, {})):
+            self.assertEqual(providers.request("gemini", "synthetic", slash, b"{}", "application/json",
+                                               time.monotonic() + 1), expected)
+        self.assertEqual(connection.request.call_args.kwargs["headers"]["Api-Revision"], "2026-05-20")
         for method, invalid in [("GET", path), ("DELETE", path),
-                ("POST", "/v1beta/interactions/test_Interaction-123/cancel"),
+                ("GET", slash), ("DELETE", slash),
+                ("POST", "/v1beta/interactions/test_Interaction-123/cancel/extra"),
                 ("POST", "/v1beta/interactions/:cancel"),
                 ("POST", "/v1beta/interactions/../other:cancel"),
                 ("POST", "/v1beta/interactions/id%3Acancel"),

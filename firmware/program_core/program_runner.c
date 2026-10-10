@@ -40,7 +40,7 @@ static bool save_frame(const char *directory,unsigned index,lv_display_t *displa
 int main(int argc,char **argv) {
     if(argc!=7||strcmp(argv[1],"--package")||strcmp(argv[3],"--scenario")||strcmp(argv[5],"--output")){puts("{\"status\":\"invalid_arguments\"}");return 2;}
     const char *fault="invalid_package";size_t size=0;void *raw=read_file(argv[2],PR_PACKAGE_BYTES,&size);pr_package package={0};
-    cJSON *scenario=NULL,*frames=cJSON_CreateArray(),*report=cJSON_CreateObject();pr_runtime *r=NULL;lv_display_t *display=NULL;unsigned steps=0,frame_count=0;char package_hash[65]={0};bool lv_started=false,ok=false;
+    cJSON *scenario=NULL,*frames=cJSON_CreateArray(),*report=cJSON_CreateObject();pr_runtime *r=NULL;lv_display_t *display=NULL;unsigned steps=0,frame_count=0;char package_hash[65]={0};bool lv_started=false,ok=false;pr_diagnostic diagnostic={0};
     if(!raw||!pr_package_parse(raw,size,&package,&fault))goto end;pr_sha256(raw,size,package_hash);free(raw);raw=NULL;
     fault="invalid_scenario";raw=read_file(argv[4],PR_SCENARIO_BYTES,&size);if(!raw)goto end;scenario=pr_json_parse(raw,size,PR_SCENARIO_BYTES);free(raw);raw=NULL;
     static const char *const skeys[]={"version","seed","initial_time_ms","wall_time","events"};uint64_t version,seed,start;
@@ -68,7 +68,7 @@ int main(int argc,char **argv) {
     }
     lv_init();lv_started=true;display=lv_display_create(PR_WIDTH,PR_HEIGHT);if(!display){fault="native_allocation";goto end;}
     lv_display_set_color_format(display,LV_COLOR_FORMAT_RGB565);lv_display_set_buffers(display,draw_buffer,NULL,sizeof(draw_buffer),LV_DISPLAY_RENDER_MODE_FULL);lv_display_set_flush_cb(display,flush);
-    r=pr_create(&package.program,clock,(uint32_t)seed,&fault);if(!r)goto end;
+    r=pr_create_diagnostic(&package.program,clock,(uint32_t)seed,&fault,&diagnostic);if(!r)goto end;
     pr_set_activation(r,1);if(!pr_attach(r,lv_screen_active())){fault="native_attach";goto end;}lv_obj_remove_flag(pr_root(r),LV_OBJ_FLAG_HIDDEN);
     for(const cJSON *e=events->child;e;e=e->next) {
         const char *t=text(e,"type");steps++;
@@ -82,6 +82,14 @@ int main(int argc,char **argv) {
     ok=true;fault=NULL;
 end:
     free(raw);cJSON_AddStringToObject(report,"status",ok?"completed":"rejected");if(fault)cJSON_AddStringToObject(report,"error",fault);cJSON_AddStringToObject(report,"engine","quickjs-ng-0.14.0");cJSON_AddStringToObject(report,"sdk","device-js-1");cJSON_AddStringToObject(report,"profile","p4-canvas-1");cJSON_AddStringToObject(report,"package_sha256",package_hash);cJSON_AddNumberToObject(report,"steps",steps);cJSON_AddItemToObject(report,"frames",frames);
+    if(r)pr_get_diagnostic(r,&diagnostic);
+    if(!ok&&diagnostic.exception_name[0]) {
+        cJSON *detail=cJSON_CreateObject();cJSON_AddStringToObject(detail,"phase",diagnostic.phase);
+        cJSON_AddStringToObject(detail,"exception_name",diagnostic.exception_name);cJSON_AddStringToObject(detail,"message",diagnostic.message);
+        if(diagnostic.line)cJSON_AddNumberToObject(detail,"line",diagnostic.line);else cJSON_AddNullToObject(detail,"line");
+        if(diagnostic.column)cJSON_AddNumberToObject(detail,"column",diagnostic.column);else cJSON_AddNullToObject(detail,"column");
+        cJSON_AddBoolToObject(detail,"truncated",diagnostic.truncated);cJSON_AddItemToObject(report,"diagnostic",detail);
+    }
     if(r){pr_metrics m=pr_get_metrics(r);cJSON_AddNumberToObject(report,"callbacks",m.callbacks);cJSON_AddNumberToObject(report,"committed_frames",m.frames);cJSON_AddNumberToObject(report,"peak_engine_payload",(double)m.peak_engine_payload);cJSON_AddNumberToObject(report,"owned_native_bytes",(double)m.owned_native_bytes);pr_detach(r);pr_destroy(r);}
     cJSON_AddBoolToObject(report,"physical_execution",false);char *output=cJSON_PrintUnformatted(report);if(output){puts(output);free(output);}cJSON_Delete(report);cJSON_Delete(scenario);pr_package_free(&package);if(display)lv_display_delete(display);if(lv_started)lv_deinit();return ok?0:1;
 }

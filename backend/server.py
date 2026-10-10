@@ -81,6 +81,20 @@ def single_instance(directory):
         os.close(descriptor)
 
 
+@contextmanager
+def generation_gate(directory, exclusive=False):
+    """Coordinate acceptance with a local supervisor restart across processes."""
+    descriptor = os.open(str(Path(directory) / "restart.lock"), os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        try:
+            fcntl.flock(descriptor, (fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH) | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise RequestError("service_restarting", 503) from None
+        yield
+    finally:
+        os.close(descriptor)
+
+
 class Application:
     def __init__(self, directory, generator=None, program_generator=None):
         self.directory = Path(directory)
@@ -98,7 +112,7 @@ class Application:
         self.lock = threading.Lock()
         self.busy = False
         self.requests = {}
-        self.device_seen = 0.0
+        self.device_seen = None
         with self.store() as store:
             # Rebinding would revoke desired work. Provision only a new database.
             try:
@@ -205,7 +219,7 @@ class Application:
             raise RequestError("combined_media_too_large", 413)
         frozen = json.dumps({"prompt": prompt, "media": snapshot}, sort_keys=True).encode()
         frozen_hash = hashlib.sha256(frozen).hexdigest()
-        with self.lock:
+        with generation_gate(self.directory), self.lock:
             if key in self.requests:
                 identifier, old_hash = self.requests[key]
                 if old_hash != frozen_hash:
@@ -283,6 +297,10 @@ class Application:
 
     def status(self, identifier):
         with self.store() as store:
+            # Distinguish a discarded browser job from a transient server error.
+            if store._db.execute("SELECT 1 FROM intents WHERE intent_id=? AND session_id=?",
+                                 (identifier, self.config["session_id"])).fetchone() is None:
+                raise RequestError("job_not_found", 404)
             intent = store.get_intent(self.config["session_id"], identifier)
             desired = store.desired_for_device(self.config["device_id"])
             active = store.active_for_session(self.config["session_id"], self.config["device_id"])
@@ -306,7 +324,7 @@ class Application:
             record.update(stage=intent["status"], detail=intent["error_code"] or "Replaced by a newer request.")
         elif any(ack["status"] == "failed" for ack in history):
             record.update(stage="failed", detail="The device could not activate this app.")
-        record.update(device_online=time.monotonic() - self.device_seen < 12,
+        record.update(device_online=self.device_seen is not None and time.monotonic() - self.device_seen < 12,
                       deployment=desired if matching else None)
         return record
 
@@ -356,7 +374,11 @@ class Handler(BaseHTTPRequestHandler):
         if role == "device":
             app.device_seen = time.monotonic()
         if self.command == "GET" and path == "/api/session":
-            return self.send(200, {"device_id": app.config["device_id"], "device_online": time.monotonic() - app.device_seen < 12})
+            with app.store() as store:
+                active = store.active_for_session(app.config["session_id"], app.config["device_id"])
+            return self.send(200, {"device_id": app.config["device_id"],
+                                  "device_online": app.device_seen is not None and time.monotonic() - app.device_seen < 12,
+                                  "generation_busy": app.busy, "active_app": active})
         if self.command == "POST" and path == "/api/uploads":
             mime = self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
             return self.send(201, app.upload(mime, self.read_body(MAX_UPLOAD)))

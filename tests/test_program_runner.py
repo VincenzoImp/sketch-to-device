@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 import zlib
 
-from backend.program_runner import RunnerError, execute_program, scenario_bytes
+from backend.program_runner import RunnerError, _diagnostic, execute_program, scenario_bytes
 from runtime.program import assemble_program
 from runtime.validation import ValidationError
 
@@ -41,6 +41,16 @@ def rgb_from_png(raw):
 
 
 class ProgramRunnerTests(unittest.TestCase):
+    def test_exception_hint_is_bounded_app_data_not_unchecked_native_output(self):
+        value = dict(phase="pointer", exception_name="TypeError", message="gfx.line endpoint out of bounds",
+                     line=47, column=9, truncated=False)
+        self.assertEqual(_diagnostic(value), value)
+        for changes in ({"phase": {}}, {"line": True}, {"column": 65537}, {"truncated": 1},
+                        {"message": "x" * 193}, {"message": "raw\nstack"}, {"exception_name": "x" * 49},
+                        {"stack": "/private/host/path"}):
+            with self.subTest(changes=changes), self.assertRaises(RunnerError):
+                _diagnostic(dict(value, **changes))
+
     def test_actual_input_frames_exact_identity_and_deterministic_reexecution(self):
         raw = package("let color='#ff0000';function draw(){gfx.begin(color);gfx.end()}draw();"
                       "app.onPointer(e=>{if(e.type==='up'){color='#00ff00';draw()}})")

@@ -105,6 +105,28 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(report["committed_frames"], 1)
         self.assertEqual(len(report["frames"]), 1)
 
+    def test_actionable_exception_detail_is_bounded_and_structured(self):
+        app = package("gfx.begin('#123456');gfx.end();\n"
+                      "app.onPointer(()=>{\n"
+                      "gfx.begin('#000000');gfx.line(0,60,320,60,'#ffffff',2);gfx.end()});")
+        report, _ = self.run_actual(app, scenario([
+            dict(type="pointer", phase="down", x=1, y=1, time_ms=1)]))
+        detail = report["diagnostic"]
+        self.assertEqual(set(detail), {"phase", "exception_name", "message", "line", "column", "truncated"})
+        self.assertEqual(report["error"], "script_exception")
+        self.assertEqual(detail["phase"], "pointer")
+        self.assertEqual(detail["exception_name"], "TypeError")
+        self.assertEqual(detail["line"], 3)
+        self.assertIn("x=0..319", detail["message"])
+        self.assertLessEqual(len(detail["message"]), 192)
+        self.assertTrue(all(32 <= ord(c) <= 126 for c in detail["message"]))
+        self.assertNotIn("stack", detail)
+        self.assertNotIn(str(ROOT), json.dumps(report))
+        report, _ = self.run_actual(package("throw Error('x'.repeat(1000))"))
+        self.assertEqual(report["diagnostic"]["phase"], "initialization")
+        self.assertEqual(len(report["diagnostic"]["message"]), 192)
+        self.assertTrue(report["diagnostic"]["truncated"])
+
     def test_explicit_wall_clock_quality(self):
         for source, expected_epoch, valid in (("unavailable", None, False),
                                                ("estimated", 123456, False),

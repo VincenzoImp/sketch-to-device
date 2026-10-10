@@ -150,10 +150,10 @@ Keep deterministic validation/activation failure identities so unchanged polling
 
 | Method and route | Responsibility |
 | --- | --- |
-| `GET /api/session` | Session-authenticated paired device and recent connectivity |
+| `GET /api/session` | Session-authenticated paired device, recent connectivity, generation_busy and last exact acknowledged active_app envelope (historical identity, not proof of current physical health) |
 | `POST /api/uploads` | Raw bounded media upload; return private attachment identity |
 | `POST /api/generate` | Freeze `{prompt, uploads, request_id}` and start the single Generate and install job |
-| `GET /api/jobs/{id}` | Session-authenticated progress and exact current deployment state |
+| `GET /api/jobs/{id}` | Session-authenticated progress and exact current deployment state; 404 job_not_found distinguishes a missing saved request from a transient service failure |
 | `GET /api/apps/{id}/versions/{version}` | Device-authenticated download of its current desired package |
 | `GET /api/device/desired` | Device-authenticated desired envelope or null |
 | `POST /api/device/ack` | Device-authenticated full identity/status ACK |

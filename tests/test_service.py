@@ -10,7 +10,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from backend.server import Application, Handler, RequestError, single_instance
+from backend.server import Application, Handler, RequestError, generation_gate, single_instance
 
 FIXTURE = (Path(__file__).parent.parent / "contracts/fixtures/tap-sprint.json").read_bytes()
 
@@ -72,6 +72,37 @@ class ServiceTests(unittest.TestCase):
                     self.fail("A second server must not reconcile live jobs")
         with single_instance(Path(self.temp.name)):
             pass
+
+    def test_restart_gate_blocks_new_work_without_creating_an_intent(self):
+        with generation_gate(Path(self.temp.name), exclusive=True):
+            with self.assertRaises(RequestError) as error:
+                self.start()
+            self.assertEqual((error.exception.code, error.exception.status), ("service_restarting", 503))
+        self.assertFalse(self.app.busy)
+        self.assertEqual(self.app.requests, {})
+        self.start()
+
+    def test_missing_job_has_specific_not_found_status(self):
+        code, _, body = http(self.app, "GET", "/api/jobs/missing")
+        self.assertEqual((code, json.loads(body)), (404, {"error": "job_not_found"}))
+
+    def test_session_reports_exact_active_identity_separately_from_connection(self):
+        state = json.loads(http(self.app, "GET", "/api/session")[2])
+        self.assertIsNone(state["active_app"])
+        self.assertFalse(state["generation_busy"])
+        identifier = self.start()
+        self.wait_idle()
+        envelope = self.app.status(identifier)["deployment"]
+        manifest = envelope["manifest"]
+        ack = {"device_id": self.app.config["device_id"], "deployment_id": envelope["deployment_id"],
+               "sequence": envelope["sequence"], "app_id": manifest["app_id"], "version": manifest["version"],
+               "sha256": manifest["sha256"], "status": "active"}
+        self.assertEqual(http(self.app, "POST", "/api/device/ack", "device", json.dumps(ack).encode())[0], 200)
+        self.app.device_seen = time.monotonic() - 20
+        state = json.loads(http(self.app, "GET", "/api/session")[2])
+        self.assertFalse(state["device_online"])
+        self.assertEqual(state["active_app"], envelope)
+        self.assertNotIn(self.app.config["device_token"], json.dumps(state))
 
     def test_assets_and_private_path_not_served(self):
         status, header, body = http(self.app, "GET", "/", "invalid")

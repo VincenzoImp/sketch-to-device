@@ -116,10 +116,60 @@ class ProgramGenerationTests(unittest.TestCase):
                 return [{"type": "text", "text": "prepared"}]
             with patch("backend.program_generation.prepare_input", side_effect=superseded), \
                     patch("backend.program_generation.run_program_agent") as agent:
-                with self.assertRaises(StoreError):
+                with self.assertRaises(ProviderError) as caught:
                     generate_program(database, "owner", intent, folder / "superseded", folder,
                                      lambda *_: None, client=FakeSpeech(), agent=agent)
+                self.assertEqual(caught.exception.code, "generation_superseded")
                 agent.assert_not_called()
+
+    def test_actual_sqlite_supersession_during_poll_stops_without_tool_or_selection(self):
+        from backend.program_agent import run_program_agent
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary); database = folder / "store.sqlite"
+            request = json.dumps({"prompt": "Input plumbing", "media": []}).encode()
+            with ProgramStore(database) as store:
+                store.bind_device("owner", "board")
+                intent = store.accept_intent("owner", "board", "one", request)["intent_id"]
+            routes = []
+            class Client:
+                deadline = 0
+                def interaction(self, payload):
+                    routes.append("create")
+                    return {"id": "remote_one", "status": "in_progress", "environment_id": "env"}
+                def google(self, method, path, payload=None):
+                    routes.append((method, path))
+                    if method == "GET":
+                        with ProgramStore(database) as store:
+                            store.accept_intent("owner", "board", "newer", request)
+                        return {"id": "remote_one", "status": "in_progress", "environment_id": "env"}
+                    return {"id": "remote_one", "status": "cancelled"}
+            with patch("backend.program_agent.time.sleep"), self.assertRaises(ProviderError) as caught:
+                generate_program(database, "owner", intent, folder / "job", folder,
+                                 lambda *_: None, client=Client(), agent=run_program_agent)
+            self.assertEqual(caught.exception.code, "generation_superseded")
+            self.assertEqual(routes, ["create", ("GET", "/v1beta/interactions/remote_one"),
+                                     ("POST", "/v1beta/interactions/remote_one/cancel")])
+            journal = json.loads((folder / "job/agent/agent-state.json").read_bytes())
+            self.assertEqual(journal["calls"], {})
+            self.assertEqual(journal["cancellation"], "confirmed")
+            self.assertFalse((folder / "job/selection.json").exists())
+            with ProgramStore(database) as store:
+                self.assertIsNone(store.desired_for_device("board"))
+                self.assertEqual(store.get_intent("owner", intent)["status"], "superseded")
+
+    def test_explicit_stop_prevents_credentials_media_and_agent_work(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            with patch("backend.program_generation.ProviderClient") as provider, \
+                    patch("backend.program_generation.prepare_input") as prepare, \
+                    self.assertRaises(ProviderError) as caught:
+                generate_program(folder / "unused.sqlite", "owner", "intent", folder / "job", folder,
+                                 lambda *_: None, stop_requested=lambda: True)
+            self.assertEqual(caught.exception.code, "generation_stopped")
+            provider.assert_not_called(); prepare.assert_not_called()
+            self.assertFalse((folder / "unused.sqlite").exists())
+            self.assertEqual(json.loads((folder / "job/timing.json").read_bytes())["error_code"],
+                             "generation_stopped")
 
 
 if __name__ == "__main__":

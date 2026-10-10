@@ -201,9 +201,65 @@ def _pending(value):
     return calls
 
 
+def _cleanup(client, identity, deadline, unresolved, clock):
+    """One documented cancel and at most one status read within reserved time.
+
+    Cancellation can be unavailable for an interaction awaiting a tool. Neither
+    an HTTP error nor a different interaction's response proves termination.
+    """
+    identity = _id(identity)
+    evidence = {"route": "rest_slash", "cancellation": "unconfirmed",
+                "post": {"attempted": False}, "readback": {"attempted": False},
+                "observed_terminal": False}
+    def observe(value):
+        matched = type(value) is dict and value.get("id") == identity
+        status = value.get("status") if type(value) is dict else None
+        item = {"identity_matched": matched}
+        if type(status) is str and status in STATES:
+            item["status"] = status
+            if matched and not unresolved:
+                evidence["observed_terminal"] = status in TERMINAL
+                if status == "cancelled":
+                    evidence["cancellation"] = "confirmed"
+        return item
+    client.deadline = deadline
+    for stage, method, path in (("post", "POST", "/v1beta/interactions/" + identity + "/cancel"),
+                               ("readback", "GET", "/v1beta/interactions/" + identity)):
+        if clock() >= deadline or evidence["cancellation"] == "confirmed":
+            break
+        evidence[stage]["attempted"] = True
+        try:
+            value = client.google(method, path, {}) if method == "POST" else client.google(method, path)
+            evidence[stage].update(observe(value))
+        except ProviderError as error:
+            evidence[stage].update(error_code=error.code, diagnostics=safe_diagnostics(error.diagnostics))
+        except Exception:
+            evidence[stage]["error_code"] = "unclassified"
+    return evidence
+
+
+def _failure_fingerprint(name, content):
+    # Each real runner invocation gets a fresh receipt even for identical input
+    # and failure. Receipt identity is provenance, not changed repair evidence.
+    normalized = json.loads(_json(content, MAX_RESULT_BYTES))
+    if name == "run_app":
+        for item in normalized:
+            if item.get("type") != "text":
+                continue
+            try:
+                value = json.loads(item["text"])
+            except (ValueError, TypeError):
+                continue
+            if type(value) is dict and value.get("execution_succeeded") is False:
+                value.pop("receipt_id", None)
+                item["text"] = json.dumps(value, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(_json(normalized, MAX_RESULT_BYTES)).hexdigest()
+
+
 def run_program_agent(input_blocks, *, job_dir, tool_definitions, execute_tool,
                       progress=lambda stage, detail: None, model="gemini-3.5-flash-lite",
                       token_budget=200000, job_seconds=600, client=None,
+                      check_active=lambda: None,
                       _clock=time.monotonic, _sleep=time.sleep):
     """Return only a trusted broker selection, with no publication side effect.
 
@@ -213,6 +269,9 @@ def run_program_agent(input_blocks, *, job_dir, tool_definitions, execute_tool,
     Provider transport has its own bounded requests; callbacks must honor the
     supplied deadline and isolate their native processes. No model/tool retries
     occur automatically. A second identical tool failure stops a stalled loop.
+    check_active raises a safe ProviderError when the job is stopped or replaced.
+    It is checked at request/tool boundaries; an in-flight request remains bounded
+    by the provider transport timeout rather than being silently retried.
     """
     started = _clock()
     if (model not in MANAGED_MODELS or type(token_budget) is not int or token_budget not in MANAGED_TOKEN_BUDGETS
@@ -249,6 +308,7 @@ def run_program_agent(input_blocks, *, job_dir, tool_definitions, execute_tool,
     def check_deadline():
         if _clock() >= deadline:
             raise ProviderError("deadline")
+        check_active()
 
     def record(value, expected=None):
         if type(value) is not dict:
@@ -282,16 +342,19 @@ def run_program_agent(input_blocks, *, job_dir, tool_definitions, execute_tool,
 
     def settle(value):
         value = record(value)
+        check_deadline()  # Retain the new handle before reacting to local stop.
         while journal["status"] in {"queued", "in_progress"}:
             check_deadline()
             _sleep(min(1, max(0, deadline - _clock())))
             check_deadline()
             identity = journal["interaction_id"]
             value = record(client.google("GET", "/v1beta/interactions/" + identity), identity)
+            check_deadline()
         return value
 
     try:
         persist()
+        check_deadline()
         client = client or ProviderClient(deadline)
         client.deadline = deadline
         payload = {"agent": AGENT, "input": content, "system_instruction": SYSTEM,
@@ -301,6 +364,7 @@ def run_program_agent(input_blocks, *, job_dir, tool_definitions, execute_tool,
         while True:
             check_deadline()
             progress("generating", "Writing and testing the app with the device SDK.")
+            check_deadline()
             journal["submission_unresolved"] = True
             persist()
             value = settle(client.interaction(payload))
@@ -340,7 +404,7 @@ def run_program_agent(input_blocks, *, job_dir, tool_definitions, execute_tool,
                     persist()
                     return dict(journal["selection"])
                 if result["is_error"]:
-                    failure = (name, fingerprint, hashlib.sha256(_json(result["content"], MAX_RESULT_BYTES)).hexdigest())
+                    failure = (name, fingerprint, _failure_fingerprint(name, result["content"]))
                     failures[failure] = failures.get(failure, 0) + 1
                     if failures[failure] >= 2:
                         raise ProviderError("generation_stalled")
@@ -350,15 +414,22 @@ def run_program_agent(input_blocks, *, job_dir, tool_definitions, execute_tool,
             payload = {"agent": AGENT, "previous_interaction_id": journal["interaction_id"],
                        "environment": environment, "agent_config": profile,
                        "background": True, "store": True, "input": continuation}
-    except ProviderError as error:
-        journal.update(result="failed", error_code=error.code, diagnostics=error.diagnostics)
-        raise
     except KeyboardInterrupt:
         journal.update(result="interrupted", error_code="generation")
         raise
-    except Exception:
-        journal.update(result="failed", error_code="generation")
-        raise ProviderError("generation") from None
+    except Exception as failure:
+        error = failure if isinstance(failure, ProviderError) else ProviderError("generation")
+        # A transport/tool exception racing a newer intent must not relabel that
+        # authoritative stop as a provider failure or encourage another retry.
+        try:
+            check_active()
+        except ProviderError as stopped:
+            if stopped.code in {"generation_stopped", "generation_superseded"}:
+                error = stopped
+        except Exception:
+            pass
+        journal.update(result="failed", error_code=error.code, diagnostics=error.diagnostics)
+        raise error from None
     finally:
         if journal["submission_unresolved"] or (journal["interaction_id"] is not None and journal["status"] not in TERMINAL):
             journal["cancellation"] = "unconfirmed"
@@ -367,11 +438,11 @@ def run_program_agent(input_blocks, *, job_dir, tool_definitions, execute_tool,
                     client.deadline = min(started + job_seconds, _clock() + 9)
                     if _clock() < client.deadline:
                         identity = journal["interaction_id"]
-                        cancelled = client.google("POST", "/v1beta/interactions/" + identity + ":cancel", {})
-                        if (not journal["submission_unresolved"] and type(cancelled) is dict
-                                and cancelled.get("id") == identity and cancelled.get("status") == "cancelled"):
-                            journal["cancellation"] = "confirmed"
+                        journal["cleanup"] = _cleanup(client, identity, client.deadline,
+                                                       journal["submission_unresolved"], _clock)
+                        journal["cancellation"] = journal["cleanup"]["cancellation"]
                 except Exception:
                     pass
-        journal["remote_job_may_continue"] = journal["cancellation"] == "unconfirmed"
+        journal["remote_job_may_continue"] = (journal["cancellation"] == "unconfirmed"
+            and not journal.get("cleanup", {}).get("observed_terminal", False))
         persist()

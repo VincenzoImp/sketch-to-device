@@ -14,7 +14,7 @@
     <section class="intro"><p class="eyebrow">YOUR NEXT LITTLE INVENTION</p><h1>Say it. Sketch it.<br><em>Make it real.</em></h1><p>Turn an idea into a touchable app. Show a sketch, explain what it does, and watch your device come to life.</p></section>
     <section id="connect" class="card" hidden><h2>Connect your workspace</h2><p>Open your private setup link, or enter your workspace access token.</p><form id="connect-form"><label for="access-token">Access token</label><input id="access-token" type="password" autocomplete="off" required><button type="submit">Connect</button></form></section>
     <section class="card workspace" id="workspace" hidden>
-      <div class="device"><span class="device-icon" aria-hidden="true">▣</span><div><strong>Waveshare P4</strong><span id="device-status">Checking connection…</span></div><span id="device-dot" class="dot"></span></div>
+      <div class="device"><span class="device-icon" aria-hidden="true">▣</span><div><strong>Waveshare P4</strong><span id="device-status">Checking connection…</span><span id="active-app" hidden></span></div><span id="device-dot" class="dot"></span></div>
       <form id="create-form">
         <label for="prompt">What should your device do?</label>
         <textarea id="prompt" maxlength="6000" rows="5" placeholder="Make a 10-second tap game. Show a big Tap button, a live score, a countdown, and a Play again button."></textarea>
