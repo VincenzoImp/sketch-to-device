@@ -30,6 +30,13 @@ typedef struct {
     unsigned line, column;
     bool truncated;
 } pr_diagnostic;
+/* Local numeric initialization evidence, including failed construction. Compiler
+ * elapsed rejection is checked after it returns; this is not hard preemption. */
+typedef struct {
+    const char *stage;
+    uint64_t setup_us, compile_us, evaluate_us;
+    unsigned compile_interrupts, evaluate_interrupts;
+} pr_startup;
 typedef struct {
     unsigned callbacks, frames, stale_events;
     size_t engine_payload, peak_engine_payload, owned_native_bytes;
@@ -45,6 +52,8 @@ pr_runtime *pr_create(const pr_program *, pr_clock, uint32_t seed, const char **
 /* Same creation path, with copied diagnostics surviving failed construction. */
 pr_runtime *pr_create_diagnostic(const pr_program *, pr_clock, uint32_t seed,
                                  const char **error, pr_diagnostic *diagnostic);
+pr_runtime *pr_create_observed(const pr_program *, pr_clock, uint32_t seed,
+                              const char **error, pr_diagnostic *, pr_startup *);
 bool pr_get_diagnostic(const pr_runtime *, pr_diagnostic *out);
 /* attach/present/detach require the caller's LVGL/BSP lock. Attach is hidden.
  * Detach deletes objects before backing pixels can be freed by destroy. */

@@ -3,13 +3,13 @@
 #include "app_ui_port.h"
 #include "program_runtime.h"
 /* Assert the real binding is never entered with the display mutex held. */
-static pr_runtime *checked_create(const pr_program *p,pr_clock c,uint32_t seed,const char **error){assert(!host_display_locked);return pr_create(p,c,seed,error);}
+static pr_runtime *checked_create(const pr_program *p,pr_clock c,uint32_t seed,const char **error,pr_diagnostic *diagnostic,pr_startup *startup){assert(!host_display_locked);return pr_create_observed(p,c,seed,error,diagnostic,startup);}
 static bool checked_dispatch(pr_runtime *r,pr_event e,pr_clock c){assert(!host_display_locked);return pr_dispatch(r,e,c);}
 static void checked_destroy(pr_runtime *r){assert(!host_display_locked);pr_destroy(r);}
 static bool checked_attach(pr_runtime *r,lv_obj_t *p){assert(host_display_locked);return pr_attach(r,p);}
 static bool checked_present(pr_runtime *r){assert(host_display_locked);return pr_present(r);}
 static void checked_detach(pr_runtime *r){assert(host_display_locked);pr_detach(r);}
-#define pr_create checked_create
+#define pr_create_observed checked_create
 #define pr_dispatch checked_dispatch
 #define pr_destroy checked_destroy
 #define pr_attach checked_attach

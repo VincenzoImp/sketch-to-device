@@ -7,6 +7,7 @@
 #include "esp_timer.h"
 #include "esp_random.h"
 #include "esp_heap_caps.h"
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
@@ -283,6 +284,19 @@ static bool admit_program(void) {
         heap_caps_get_free_size(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) >= 1024 * 1024 &&
         heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) >= PR_WIDTH * PR_HEIGHT * 2;
 }
+static void memory_evidence(const char *stage) {
+#ifndef APP_UI_HOST_TEST
+    unsigned programs=(live&&live->script)+(previous&&previous->script)+
+        (prepared&&prepared->script)+(retired&&retired->script);
+    ESP_LOGI("device","ui_memory stage=%s live=%u previous=%u prepared=%u retired=%u programs=%u internal=%zu largest=%zu external=%zu",
+        stage,(unsigned)(live!=NULL),(unsigned)(previous!=NULL),(unsigned)(prepared!=NULL),(unsigned)(retired!=NULL),programs,
+        heap_caps_get_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
+        heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
+        heap_caps_get_free_size(MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
+#else
+    (void)stage;
+#endif
+}
 static instance *create(app_package *package, app_ui_ticket ticket, const char **error) {
     instance *app = calloc(1, sizeof(*app));
     if (!app) { app_package_free(package); *error="allocation_failed"; return NULL; }
@@ -291,7 +305,12 @@ static instance *create(app_package *package, app_ui_ticket ticket, const char *
     if (!app->view) { *error="allocation_failed"; dispose(app); return NULL; }
     if (package->kind == APP_PACKAGE_PROGRAM) {
         if (!admit_program()) { *error="native_memory_admission"; dispose(app); return NULL; }
-        app->script=pr_create(&package->data.program->program,clock_now(),esp_random(),error);
+        pr_startup startup;
+        app->script=pr_create_observed(&package->data.program->program,clock_now(),esp_random(),error,NULL,&startup);
+#ifndef APP_UI_HOST_TEST
+        ESP_LOGI("device","program_init stage=%s ok=%u setup_us=%" PRIu64 " compile_us=%" PRIu64 " evaluate_us=%" PRIu64 " compile_interrupts=%u evaluate_interrupts=%u",
+            startup.stage,(unsigned)(app->script!=NULL),startup.setup_us,startup.compile_us,startup.evaluate_us,startup.compile_interrupts,startup.evaluate_interrupts);
+#endif
         if (!app->script) { dispose(app); return NULL; }
         pr_set_activation(app->script,ticket);
     } else as_install(&app->legacy,package->data.legacy,now_ms(),ticket);
@@ -411,9 +430,11 @@ static void command_execute(ui_command command) {
         }
         if (!prepared && !retired && (!live || committed) &&
             (command.operation!=APP_UI_PREPARE_RECOVERY || (recovery_pending && live && live->failed))) {
+            memory_evidence("before_prepare");
             prepared=create(command.package,command.ticket,&error);
             command.package=NULL;
             ok=prepared!=NULL;
+            memory_evidence(ok?"ready":"prepare_failed");
         }
         app_package_free(command.package);
         break;
@@ -446,6 +467,7 @@ static void command_execute(ui_command command) {
     case APP_UI_COMMIT:
         if(live && live->ticket==command.ticket && !live->failed) {
             dispose(retired); retired=NULL; committed=true; ok=true;
+            memory_evidence("commit");
         }
         break;
     case APP_UI_ABORT:

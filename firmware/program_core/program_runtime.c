@@ -42,7 +42,10 @@ struct pr_runtime {
     unsigned callbacks, frames, stale;
 };
 static int64_t real_us(void) {
-#ifdef ESP_PLATFORM
+#ifdef PR_TEST_CLOCK
+    extern int64_t pr_test_time_us(void);
+    return pr_test_time_us();
+#elif defined(ESP_PLATFORM)
     return esp_timer_get_time();
 #else
     struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t);
@@ -154,10 +157,11 @@ static void rejection(JSContext *c, JSValueConst promise, JSValueConst reason, b
     if(r->rejected_count==REJECTIONS) { r->rejection_overflow=true; return; }
     r->rejected[r->rejected_count++]=JS_DupValue(c,promise);
 }
-static void checkpoint_begin(pr_runtime *r) {
-    r->deadline=real_us()+DEADLINE_US; r->interrupt_calls=0;
+static int64_t checkpoint_begin(pr_runtime *r) {
+    int64_t start=real_us();r->deadline=start+DEADLINE_US; r->interrupt_calls=0;
     r->command_work=r->text_work=r->pixel_work=0;
     r->drawing=r->staged=false; r->build.count=r->candidate.count=0;
+    return start;
 }
 static bool checkpoint_end(pr_runtime *r, JSValue value) {
     bool ok=!JS_IsException(value); JS_FreeValue(r->context,value);
@@ -283,7 +287,9 @@ static bool setup(pr_runtime *r) {
     JS_FreeValue(c,math);JS_FreeValue(c,global);JS_FreeValue(c,gfx);JS_FreeValue(c,app);return ok;
 }
 static bool valid_clock(pr_clock c) { return c.monotonic_ms<=9007199254740991ULL&&c.epoch_ms>=0&&c.epoch_ms<=9007199254740991LL&&c.wall_source>=PR_WALL_UNAVAILABLE&&c.wall_source<=PR_WALL_SYNCHRONIZED; }
-pr_runtime *pr_create_diagnostic(const pr_program *p,pr_clock clock,uint32_t seed,const char **error,pr_diagnostic *diagnostic) {
+pr_runtime *pr_create_observed(const pr_program *p,pr_clock clock,uint32_t seed,const char **error,pr_diagnostic *diagnostic,pr_startup *startup) {
+    pr_startup local={0};if(!startup)startup=&local;*startup=(pr_startup){.stage="setup"};
+    int64_t start=real_us();
     if(diagnostic)*diagnostic=(pr_diagnostic){.phase="initialization"};
     if(error)*error="invalid_program";
     if(!p||!p->source||!p->source_size||p->source_size>PR_PACKAGE_BYTES||memchr(p->source,0,p->source_size)||p->asset_count>PR_ASSETS||(p->asset_count&&!p->assets)||!valid_clock(clock))return NULL;
@@ -305,16 +311,30 @@ pr_runtime *pr_create_diagnostic(const pr_program *p,pr_clock clock,uint32_t see
     memset(r->front,0,PR_WIDTH*PR_HEIGHT*2);memset(r->back,0,PR_WIDTH*PR_HEIGHT*2);r->native_bytes+=PR_WIDTH*PR_HEIGHT*4;
     static const JSMallocFunctions allocator={js_zero,js_alloc,js_release,js_resize,js_size};
     r->engine=JS_NewRuntime2(&allocator,r);if(!r->engine)goto fail;
-    JS_SetMemoryLimit(r->engine,HEAP_LIMIT);JS_SetMaxStackSize(r->engine,32768);JS_SetInterruptHandler(r->engine,interrupt,r);JS_SetHostPromiseRejectionTracker(r->engine,rejection,r);
+    JS_SetMemoryLimit(r->engine,HEAP_LIMIT);JS_SetMaxStackSize(r->engine,32768);JS_SetHostPromiseRejectionTracker(r->engine,rejection,r);
     r->context=JS_NewContextRaw(r->engine);if(!r->context)goto fail;JS_SetContextOpaque(r->context,r);
-    checkpoint_begin(r);if(!setup(r))goto fail;
+    if(!setup(r))goto fail;
     char *source=malloc(p->source_size+1);if(!source)goto fail;memcpy(source,p->source,p->source_size);source[p->source_size]=0;
-    JSValue result=JS_Eval(r->context,source,p->source_size,"app.js",JS_EVAL_TYPE_GLOBAL|JS_EVAL_FLAG_STRICT);free(source);
-    if(!checkpoint_end(r,result))goto fail;
+    startup->setup_us=(uint64_t)(real_us()-start);startup->stage="compile";
+    start=checkpoint_begin(r);JS_SetInterruptHandler(r->engine,interrupt,r);
+    JSValue compiled=JS_Eval(r->context,source,p->source_size,"app.js",JS_EVAL_TYPE_GLOBAL|JS_EVAL_FLAG_STRICT|JS_EVAL_FLAG_COMPILE_ONLY);free(source);
+    startup->compile_us=(uint64_t)(real_us()-start);startup->compile_interrupts=r->interrupt_calls;
+    if(JS_IsException(compiled)){diagnostic_pending(r,r->context);JS_FreeValue(r->context,compiled);if(!r->fault)r->fault="script_exception";goto fail;}
+    if(r->fault || startup->compile_us>=DEADLINE_US){r->fault="execution_budget";JS_FreeValue(r->context,compiled);goto fail;}
+    startup->stage="evaluate";start=checkpoint_begin(r);
+    /* EvalFunction consumes the compiled value even when execution throws. */
+    JSValue result=JS_EvalFunction(r->context,compiled);bool ok=checkpoint_end(r,result);
+    startup->evaluate_us=(uint64_t)(real_us()-start);startup->evaluate_interrupts=r->interrupt_calls;
+    if(!ok)goto fail;
+    startup->stage="ready";
     if(error)*error=NULL;return r;
 fail:
+    if(!strcmp(startup->stage,"setup"))startup->setup_us=(uint64_t)(real_us()-start);
     if(error)*error=r->fault?r->fault:"allocation_or_program_error";
     if(diagnostic)*diagnostic=r->diagnostic;pr_destroy(r);return NULL;
+}
+pr_runtime *pr_create_diagnostic(const pr_program *p,pr_clock clock,uint32_t seed,const char **error,pr_diagnostic *diagnostic) {
+    return pr_create_observed(p,clock,seed,error,diagnostic,NULL);
 }
 pr_runtime *pr_create(const pr_program *p,pr_clock clock,uint32_t seed,const char **error) {
     return pr_create_diagnostic(p,clock,seed,error,NULL);

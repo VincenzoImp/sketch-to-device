@@ -1,8 +1,9 @@
 # Shared programmable runtime
 
-Implementation candidate for `device-js-1` / `p4-canvas-1`, using the existing
-verified QuickJS-NG0.14.0, LVGL9.4 and IDF5.5.5 sources. This directory does not
-modify or flash the production firmware. The package wire contract and initial
+Integrated shared host/P4 core for `device-js-1` / `p4-canvas-1`, using the
+verified QuickJS-NG0.14.0, LVGL9.4 and IDF5.5.5 sources. Production firmware links
+this core; the host reproduction commands below do not flash the device.
+The package wire contract and initial
 resource profile are owned by [programmable.md](../../contracts/programmable.md)
 and [program-profile.json](../../contracts/program-profile.json).
 
@@ -141,5 +142,20 @@ allocator headers, native LVGL objects, drawing scratch, host process overhead,
 network/display reserves and other apps. Native LVGL OOM/assertion is **not**
 gracefully contained; candidate admission and target headroom must be qualified.
 Soft interpreter interrupts are not hard deadlines during parser/native work.
+Initialization separates trusted engine/binding setup, source compilation, and
+ordinary JavaScript evaluation. Setup no longer consumes the application's
+50ms checkpoint. Compilation has a separate50ms soft budget, the existing
+source/memory bounds, and an elapsed check after the compiler returns; the
+parser is not guaranteed to be preemptible. The interrupt handler is installed
+after trusted setup, before compilation. Evaluation and its microtasks start
+a fresh unchanged50ms/1,000interrupt/64job checkpoint. Monotonic elapsed time
+still includes operating-system preemption; this is not CPU-time accounting.
+The local `pr_create_observed` report preserves fixed initialization stage,
+elapsed microseconds and interrupt counts even when construction fails.
+`startup_tests` uses the real engine and a deterministic test clock to exercise
+setup delay, separate compilation/evaluation, compiler expiry and infinite
+initialization/callback loops. Device logs also record bounded instance counts
+and memory at PREPARE, READY/failure and COMMIT; these are measurements, not an
+OOM guarantee.
 This slice does not claim thread-safe arbitrary callers, physical frame timing,
 complete production lifecycle/rollback, camera/audio support or sandbox perfection.
